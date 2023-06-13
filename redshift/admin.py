@@ -24,6 +24,17 @@ class SnapshotAdmin(PermissionAdmin):
         'create_time_str',
     )
 
+    def changelist_view(self, request, extra_context=None):
+        start_date = request.session.get('start_date')
+        end_date = request.session.get('end_date')
+        if not extra_context:
+            extra_context = {}
+        if start_date:
+            extra_context['start_date'] = start_date
+        if end_date:
+            extra_context['end_date'] = end_date
+        return super().changelist_view(request, extra_context)
+
 
 @admin.register(Table)
 class TableAdmin(PermissionAdmin):

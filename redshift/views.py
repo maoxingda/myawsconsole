@@ -24,7 +24,7 @@ def refresh_snapshots(request):
         # redshift集群快照最多只能保存35天
         start_time = datetime.utcnow() - timedelta(days=35)
     if end_date:
-        end_time = datetime.strptime(end_date, '%m/%d/%Y') - timedelta(hours=8)
+        end_time = datetime.strptime(end_date, '%m/%d/%Y') + timedelta(hours=16)
     else:
         # redshift集群快照最多只能保存35天
         end_time = datetime.utcnow()
@@ -46,6 +46,9 @@ def refresh_snapshots(request):
     if snapshots:
         Snapshot.objects.all().delete()
         Snapshot.objects.bulk_create(snapshots)
+
+    request.session['start_date'] = start_date
+    request.session['end_date'] = end_date
 
     return redirect(reverse('admin:redshift_snapshot_changelist'))
 
@@ -71,7 +74,7 @@ def refresh_tables(request):
         Table.objects.all().delete()
         Table.objects.bulk_create(tables)
 
-    return redirect(reverse('redshift:refresh_tables'))
+    return redirect(reverse('admin:redshift_table_changelist'))
 
 
 def launch_restore_table_task(request, task_id):

@@ -4,8 +4,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/jquery-ui.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/jquery-ui.min.js"></script>
-    <li><label for="id_start_date">开始日期: </label><input type="text" id="id_start_date"/></li>
-    <li><label for="id_end_date">结束日期: </label><input type="text" id="id_end_date"/></li>
+    <li><label for="id_start_date">开始日期: </label><input type="text" id="id_start_date" value="{{ start_date }}"/></li>
+    <li><label for="id_end_date">结束日期: </label><input type="text" id="id_end_date" value="{{ end_date }}"/></li>
     <li><a id="id_refresh_snapshots" href="{% url 'redshift:refresh_snapshots' %}">刷新快照</a></li>
     <script>
         const btn_refresh_snapshots = $('#id_refresh_snapshots');
