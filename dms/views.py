@@ -56,7 +56,7 @@ def refresh_endpoints(request):
     paginator = client.get_paginator('describe_endpoints')
     for page in paginator.paginate():
         for endpoint in page['Endpoints']:
-            if server_name in endpoint.get('ServerName', []):
+            if server_name == endpoint.get('ServerName'):
                 endpoints.append(Endpoint(
                     identifier=endpoint['EndpointIdentifier'],
                     arn=endpoint['EndpointArn'],
