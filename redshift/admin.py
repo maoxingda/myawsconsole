@@ -1,6 +1,7 @@
+import boto3
 from django.contrib import admin
 
-from redshift.models import Snapshot, Table, RestoreTableTask
+from redshift.models import Snapshot, Table, RestoreTableTask, RestoreClusterTask, Cluster
 
 
 class PermissionAdmin(admin.ModelAdmin):
@@ -14,11 +15,27 @@ class PermissionAdmin(admin.ModelAdmin):
         return False
 
 
+@admin.register(Cluster)
+class ClusterAdmin(PermissionAdmin):
+    def has_delete_permission(self, request, obj=None):
+        return True
+
+    def delete_view(self, request, object_id, extra_context=None):
+        if request.method == 'POST':
+            client = boto3.client('redshift')
+            cluster = Cluster.objects.get(id=object_id)
+            client.delete_cluster(ClusterIdentifier=cluster.identifier, SkipFinalClusterSnapshot=True)
+        return super().delete_view(request, object_id, extra_context)
+
+
 @admin.register(Snapshot)
 class SnapshotAdmin(PermissionAdmin):
     date_hierarchy = 'create_time'
     search_fields = (
         'create_time_str',
+    )
+    list_display = (
+        '__str__',  # TODO 从快照列表页添加创建：恢复表、集群任务快捷键
     )
     exclude = (
         'create_time_str',
@@ -58,13 +75,14 @@ class RestorTableTaskAdmin(admin.ModelAdmin):
     filter_horizontal = (
         'tables',
     )
-    # readonly_fields = (
-    #     'html_actions',
-    # )
-    #
-    # @admin.display(description='操作')
-    # def html_actions(self, obj):
-    #     buttons = [
-    #         f'<a href="/redshift/api/restore_table_task/{obj.id}/launch/">启动</a>',
-    #     ]
-    #     return mark_safe('&emsp;'.join(buttons))
+
+
+@admin.register(RestoreClusterTask)
+class RestoreClusterTaskAdmin(admin.ModelAdmin):
+    autocomplete_fields = (
+        'snapshot',
+    )
+    list_display = (
+        'name',
+        'snapshot',
+    )

@@ -9,8 +9,25 @@ from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 
-from redshift.models import Snapshot, Table, RestoreTableTask
+from redshift.models import Snapshot, Table, RestoreTableTask, RestoreClusterTask, Cluster
 from redshift.util.corp_wechat import send_message
+
+
+def refresh_clusters(request):
+    clusters = []
+    client = boto3.client('redshift')
+    paginator = client.get_paginator('describe_clusters')
+    restore_cluster_pattern = re.compile(r'snapshot-\d{8}t\d{6}$')
+    for page in paginator.paginate():
+        for cluster in page['Clusters']:
+            if restore_cluster_pattern.search(cluster['ClusterIdentifier']) and cluster['ClusterStatus'] == 'available':
+                clusters.append(Cluster(identifier=cluster['ClusterIdentifier']))
+
+    Cluster.objects.all().delete()
+    if clusters:
+        Cluster.objects.bulk_create(clusters)
+
+    return redirect(reverse('admin:redshift_cluster_changelist'))
 
 
 def refresh_snapshots(request):
@@ -138,3 +155,50 @@ def launch_restore_table_task(request, task_id):
         send_message(f'###### 任务：<font color="info">{task.name}</font> 完成')
 
     return HttpResponse('恢复表任务成功')
+
+
+def launch_restore_cluster_task(request, task_id):
+    client = boto3.client('redshift')
+    task = RestoreClusterTask.objects.get(id=task_id)
+    cluster_id = task.snapshot.cluster
+    snapshot_id = task.snapshot.identifier
+    local_datetime_from_snapshot_id = (datetime.strptime(snapshot_id[-19:], "%Y-%m-%d-%H-%M-%S") + timedelta(hours=8)).strftime('%Y%m%dT%H%M%S')
+    restore_cluster_id = f'{cluster_id}-snapshot-{local_datetime_from_snapshot_id}'
+
+    cluster_addr = f'https://cn-northwest-1.console.amazonaws.cn/redshiftv2/home?' \
+                   f'region=cn-northwest-1#cluster-details?cluster={restore_cluster_id.lower()}'
+    snapshot_url = reverse("admin:redshift_snapshot_change", kwargs={'object_id': task.snapshot.id})
+    host = 'http://127.0.0.1:8000' if os.getlogin() == 'root' else 'http://127.0.0.1:8089'
+
+    response = client.describe_clusters(ClusterIdentifier=restore_cluster_id)
+    if response['Clusters']:
+        send_message(f'###### 集群：[{restore_cluster_id}]({cluster_addr}) 已经存在')
+    else:
+        response = client.describe_clusters(ClusterIdentifier=cluster_id)
+
+        client.restore_from_cluster_snapshot(
+            ClusterIdentifier=restore_cluster_id,
+            SnapshotIdentifier=snapshot_id,
+            SnapshotClusterIdentifier=cluster_id,
+            ClusterSubnetGroupName=response['Clusters'][0]['ClusterSubnetGroupName'],
+            ClusterParameterGroupName=response['Clusters'][0]['ClusterParameterGroups'][0]['ParameterGroupName'],
+            VpcSecurityGroupIds=[response['Clusters'][0]['VpcSecurityGroups'][0]['VpcSecurityGroupId']],
+        )
+
+        start = datetime.now()
+        # 等待集群状态更新为：Available
+        while True:
+            response = client.describe_clusters(ClusterIdentifier=restore_cluster_id)
+
+            cluster_status = response['Clusters'][0]['ClusterStatus']
+
+            print(f'cluster status: {cluster_status}, elapsed: {int((datetime.now() - start).total_seconds())} 秒')
+
+            if cluster_status == 'Available':
+                break
+
+            time.sleep(15)
+
+        send_message(f'###### 从快照 [{snapshot_id}]({host}{snapshot_url}) 创建集群 [{restore_cluster_id}]({cluster_addr}) 成功')
+
+    return HttpResponse('恢复集群成功')
