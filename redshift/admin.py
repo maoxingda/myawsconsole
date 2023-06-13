@@ -6,6 +6,10 @@ from django.utils.safestring import mark_safe
 from redshift.models import Snapshot, Table, RestoreTableTask, RestoreClusterTask, Cluster
 
 
+admin.site.site_title = '我的AWS控制台'
+admin.site.site_header = '我的AWS控制台'
+
+
 class PermissionAdmin(admin.ModelAdmin):
     def has_add_permission(self, request, obj=None):
         return False
