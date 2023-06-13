@@ -1,0 +1,6 @@
+boto3-stubs[s3]
+boto3-stubs[dms]
+boto3-stubs[rds]
+boto3-stubs[glue]
+boto3-stubs[dynamodb]
+boto3-stubs[redshift]

@@ -170,8 +170,14 @@ def launch_restore_cluster_task(request, task_id):
     snapshot_url = reverse("admin:redshift_snapshot_change", kwargs={'object_id': task.snapshot.id})
     host = 'http://127.0.0.1:8000' if os.getlogin() == 'root' else 'http://127.0.0.1:8089'
 
-    response = client.describe_clusters(ClusterIdentifier=restore_cluster_id)
-    if response['Clusters']:
+    is_find = False
+    paginator = client.get_paginator('describe_clusters')
+    for page in paginator.paginate():
+        for cluster in page['Clusters']:
+            if cluster['ClusterIdentifier'] == 'restore_cluster_id':
+                is_find = True
+
+    if is_find:
         send_message(f'###### 集群：[{restore_cluster_id}]({cluster_addr}) 已经存在')
     else:
         response = client.describe_clusters(ClusterIdentifier=cluster_id)
