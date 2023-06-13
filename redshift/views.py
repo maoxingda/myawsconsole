@@ -178,7 +178,7 @@ def launch_restore_cluster_task(request, task_id):
                 is_find = True
 
     if is_find:
-        send_message(f'###### 集群：[{restore_cluster_id}]({cluster_addr}) 已经存在')
+        send_message(f'###### 集群：[{restore_cluster_id.lower()}]({cluster_addr}) 已经存在')
     else:
         response = client.describe_clusters(ClusterIdentifier=cluster_id)
 
@@ -205,6 +205,6 @@ def launch_restore_cluster_task(request, task_id):
 
             time.sleep(15)
 
-        send_message(f'###### 从快照 [{snapshot_id}]({host}{snapshot_url}) 创建集群 [{restore_cluster_id}]({cluster_addr}) 成功')
+        send_message(f'###### 从快照 [{snapshot_id}]({host}{snapshot_url}) 创建集群 [{restore_cluster_id.lower()}]({cluster_addr}) 成功')
 
     return HttpResponse('恢复集群成功')
