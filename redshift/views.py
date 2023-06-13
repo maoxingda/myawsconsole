@@ -1,0 +1,137 @@
+import os
+import re
+import time
+from datetime import datetime, timedelta
+
+import boto3
+import psycopg2
+from django.http import HttpResponse
+from django.shortcuts import redirect
+from django.urls import reverse
+
+from redshift.models import Snapshot, Table, RestoreTableTask
+from redshift.util.corp_wechat import send_message
+
+
+def refresh_snapshots(request):
+    snapshots = []
+    client = boto3.client('redshift')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    if start_date:
+        start_time = datetime.strptime(start_date, '%m/%d/%Y') - timedelta(hours=8)
+    else:
+        # redshift集群快照最多只能保存35天
+        start_time = datetime.utcnow() - timedelta(days=35)
+    if end_date:
+        end_time = datetime.strptime(end_date, '%m/%d/%Y') - timedelta(hours=8)
+    else:
+        # redshift集群快照最多只能保存35天
+        end_time = datetime.utcnow()
+    paginator = client.get_paginator('describe_cluster_snapshots')
+    snapshot_identifier_pattern = re.compile(r'\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d$')
+    for page in paginator.paginate(StartTime=start_time, EndTime=end_time):
+        for snapshot in page['Snapshots']:
+            if not snapshot_identifier_pattern.search(snapshot['SnapshotIdentifier']):
+                continue
+            snapshots.append(
+                Snapshot(
+                    create_time=snapshot['SnapshotCreateTime'],
+                    create_time_str=(snapshot['SnapshotCreateTime'] + timedelta(hours=8)).strftime('%Y%m%d%H%M'),
+                    cluster=snapshot['ClusterIdentifier'],
+                    identifier=snapshot['SnapshotIdentifier']
+                )
+            )
+
+    if snapshots:
+        Snapshot.objects.all().delete()
+        Snapshot.objects.bulk_create(snapshots)
+
+    return redirect(reverse('admin:redshift_snapshot_changelist'))
+
+
+def refresh_tables(request):
+    dns = os.getenv('dns')
+
+    tables = []
+    suffix_filter = re.compile(r'(?:_stg|_staging|_tmp|_temp|_tmp\d+|_temp\d+|_increment)$')
+    with psycopg2.connect(dns) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(f"""
+                select database_name || '.' || schema_name || '.' || table_name, schema_name from svv_redshift_tables
+                where table_type = 'TABLE' and schema_name in ('ods', 'stg', 'dim', 'dwd', 'dws', 'met', 'ads')
+            """)
+            for row in cursor.fetchall():
+                table_name = row[0]
+                schema = row[1]
+                if not suffix_filter.search(table_name):
+                    tables.append(Table(name=table_name, schema=schema))
+
+    if tables:
+        Table.objects.all().delete()
+        Table.objects.bulk_create(tables)
+
+    return redirect(reverse('redshift:refresh_tables'))
+
+
+def launch_restore_table_task(request, task_id):
+    task = RestoreTableTask.objects.get(id=task_id)
+    client = boto3.client('redshift')
+    dns = os.getenv('dns')
+    conn = psycopg2.connect(dns)
+    cursor = conn.cursor()
+    for table in task.tables.all():
+        target_table_name = table.name.split(".")[2] + f'_{(task.snapshot.create_time + timedelta(hours=8)).strftime("%Y%m%d%H%M")}'
+        cursor.execute(f"""
+            select 1 from svv_redshift_tables where schema_name = 'temp' and table_name = '{target_table_name}'
+        """)
+        if cursor.fetchall():
+            print(f'目标表：temp.{target_table_name} 已经存在，跳过...')
+            continue
+
+        start = datetime.now()
+        # 集群在连续两次恢复快照操作之间必须等待集群状态更新为：Available
+        while True:
+            response = client.describe_clusters(ClusterIdentifier=task.snapshot.cluster)
+
+            cluster_status = response['Clusters'][0]['ClusterAvailabilityStatus']
+
+            print(f'cluster status: {cluster_status}, elapsed: {int((datetime.now() - start).total_seconds())} 秒')
+
+            if cluster_status == 'Available':
+                break
+
+            time.sleep(15)
+
+        response = client.restore_table_from_cluster_snapshot(
+            ClusterIdentifier=task.snapshot.cluster,
+            SnapshotIdentifier=task.snapshot.identifier,
+            SourceDatabaseName=table.name.split('.')[0],
+            SourceSchemaName=table.name.split('.')[1],
+            SourceTableName=table.name.split('.')[2],
+            TargetDatabaseName=table.name.split('.')[0],
+            TargetSchemaName='temp',
+            NewTableName=target_table_name,
+        )
+        req_id = response['TableRestoreStatus']['TableRestoreRequestId']
+
+        start = datetime.now()
+        while (datetime.now() - start).total_seconds() / 60 < 15:
+            response = client.describe_table_restore_status(
+                ClusterIdentifier=task.snapshot.cluster,
+                TableRestoreRequestId=req_id,
+            )
+
+            status = response['TableRestoreStatusDetails'][0]['Status']
+
+            print(f'temp.{target_table_name}, {status}, elapsed: {int((datetime.now() - start).total_seconds())} 秒')
+
+            if status in ['SUCCEEDED', 'FAILED', 'CANCELED']:
+                break
+
+            time.sleep(15)
+
+    if task.is_nofity:
+        send_message(f'###### 任务：<font color="info">{task.name}</font> 完成')
+
+    return HttpResponse('恢复表任务成功')

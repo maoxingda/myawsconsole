@@ -1,0 +1,5 @@
+Django==4.1
+boto3==1.26.148
+django-extensions==3.2.1
+psycopg2-binary==2.9.6
+requests==2.31.0

@@ -1,0 +1,16 @@
+{% extends 'admin/change_form.html' %}
+{% load static %}
+
+{% block extrahead %}{{ block.super }}
+    <script src="{% static 'redshift/js/restoretabletask/change_form.js' %}"></script>
+{% endblock %}
+
+{% block object-tools-items %}
+    <li>
+        <a id="id_launch" href="{% url 'redshift:launch_restore_table_task' object_id %}" onclick="return false;">启动</a>
+    </li>
+    <li>
+        <a id="id_running" href="#" onclick="return false;" style="display: none; background-color: #75f94c; color: red;">运行中...</a>
+    </li>
+    {{ block.super }}
+{% endblock %}
