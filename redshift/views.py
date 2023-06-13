@@ -174,7 +174,7 @@ def launch_restore_cluster_task(request, task_id):
     paginator = client.get_paginator('describe_clusters')
     for page in paginator.paginate():
         for cluster in page['Clusters']:
-            if cluster['ClusterIdentifier'] == 'restore_cluster_id':
+            if cluster['ClusterIdentifier'] == restore_cluster_id.lower():
                 is_find = True
 
     if is_find:
@@ -200,7 +200,7 @@ def launch_restore_cluster_task(request, task_id):
 
             print(f'cluster status: {cluster_status}, elapsed: {int((datetime.now() - start).total_seconds())} 秒')
 
-            if cluster_status == 'Available':
+            if cluster_status == 'available':
                 break
 
             time.sleep(15)
