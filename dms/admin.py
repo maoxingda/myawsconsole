@@ -1,6 +1,7 @@
 import json
 
 from django.contrib import admin
+from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 from dms.models import Task, Endpoint
@@ -60,6 +61,7 @@ class EndpointAdmin(PermissionAdmin):
     @admin.display(description='操作')
     def html_actions(self, obj):
         buttons = [
+            f'<a href="{reverse("dms:refresh_tasks")}?endpoint_id={obj.id}">DMS任务</a>',
             f'<a href="{obj.url}">AWS控制台</a>',
         ]
 

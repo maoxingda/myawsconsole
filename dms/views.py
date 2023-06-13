@@ -9,9 +9,21 @@ def refresh_tasks(request):
     tasks = []
     client = boto3.client('dms')
     table_name = request.GET.get('search_table')
+    endpoint_id = request.GET.get('endpoint_id')
     paginator = client.get_paginator('describe_replication_tasks')
     for page in paginator.paginate():
         for task in page['ReplicationTasks']:
+            if endpoint_id:
+                endpoint = Endpoint.objects.get(id=endpoint_id)
+                if endpoint.arn in (task['SourceEndpointArn'], task['TargetEndpointArn']):
+                    tasks.append(Task(
+                        name=task['ReplicationTaskIdentifier'],
+                        url=f"https://cn-northwest-1.console.amazonaws.cn/dms/v2/home?"
+                            f"region=cn-northwest-1#taskDetails/{task['ReplicationTaskIdentifier']}",
+                        table_mappings=task['TableMappings']
+                    ))
+                continue
+
             dts_paginator = client.get_paginator('describe_table_statistics')
             for ts_page in dts_paginator.paginate(ReplicationTaskArn=task['ReplicationTaskArn']):
                 find = False
