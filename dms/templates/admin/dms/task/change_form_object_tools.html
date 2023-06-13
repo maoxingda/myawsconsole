@@ -1,0 +1,23 @@
+{% extends 'admin/change_form_object_tools.html' %}
+
+{% block object-tools-items %}
+    <li>
+        <a id="id_copy" href="#" onclick="return false;">复制表映射</a>
+    </li>
+    {{ block.super }}
+    <script>
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text)
+                .then(() => {
+                    console.log('文本已成功复制到剪贴板');
+                })
+                .catch((error) => {
+                    console.error('复制文本到剪贴板时出现错误: ', error);
+                });
+        }
+
+        django.jQuery('#id_copy').click(function () {
+            copyToClipboard(django.jQuery('pre').text());
+        });
+    </script>
+{% endblock %}

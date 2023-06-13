@@ -19,6 +19,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path('redshift/', include('redshift.urls')),
+    path('dms/', include('dms.urls')),
 
     path('', admin.site.urls),
 ]

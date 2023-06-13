@@ -43,6 +43,7 @@ INSTALLED_APPS = [
 
     # 自己开发的应用
     'redshift',
+    'dms',
 ]
 
 MIDDLEWARE = [

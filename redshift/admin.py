@@ -42,14 +42,14 @@ class SnapshotAdmin(PermissionAdmin):
     )
     list_display = (
         '__str__',
-        'add_task',
+        'html_actions',
     )
     exclude = (
         'create_time_str',
     )
 
     @admin.display(description='操作')
-    def add_task(self, obj):
+    def html_actions(self, obj):
         buttons = []
 
         add_url = reverse('admin:redshift_restoretabletask_add')
