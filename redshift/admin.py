@@ -1,5 +1,7 @@
 import boto3
 from django.contrib import admin
+from django.urls import reverse
+from django.utils.safestring import mark_safe
 
 from redshift.models import Snapshot, Table, RestoreTableTask, RestoreClusterTask, Cluster
 
@@ -35,11 +37,27 @@ class SnapshotAdmin(PermissionAdmin):
         'create_time_str',
     )
     list_display = (
-        '__str__',  # TODO 从快照列表页添加创建：恢复表、集群任务快捷键
+        '__str__',
+        'add_task',
     )
     exclude = (
         'create_time_str',
     )
+
+    @admin.display(description='操作')
+    def add_task(self, obj):
+        buttons = []
+
+        add_url = reverse('admin:redshift_restoretabletask_add')
+        botton1 = f'<a href="{add_url}?snapshot={obj.id}">恢复 表</a>'
+
+        add_url = reverse('admin:redshift_restoreclustertask_add')
+        botton2 = f'<a href="{add_url}?snapshot={obj.id}">集群 任务</a>'
+
+        buttons.append(botton1)
+        buttons.append(botton2)
+
+        return mark_safe(' / '.join(buttons))
 
     def changelist_view(self, request, extra_context=None):
         start_date = request.session.get('start_date')
