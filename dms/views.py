@@ -2,9 +2,11 @@ import boto3
 from django.shortcuts import redirect
 from django.urls import reverse
 
+from common.session_utils import post_data_to_session
 from dms.models import Task, Endpoint
 
 
+@post_data_to_session
 def refresh_tasks(request):
     tasks = []
     client = boto3.client('dms')
@@ -44,11 +46,10 @@ def refresh_tasks(request):
         Task.objects.all().delete()
         Task.objects.bulk_create(tasks)
 
-    request.session['table_name'] = table_name
-
     return redirect(reverse('admin:dms_task_changelist'))
 
 
+@post_data_to_session
 def refresh_endpoints(request):
     endpoints = []
     client = boto3.client('dms')
@@ -68,7 +69,5 @@ def refresh_endpoints(request):
     if endpoints:
         Endpoint.objects.all().delete()
         Endpoint.objects.bulk_create(endpoints)
-
-    request.session['server_name'] = server_name
 
     return redirect(reverse('admin:dms_endpoint_changelist'))

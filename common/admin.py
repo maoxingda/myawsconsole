@@ -6,6 +6,7 @@ from django.contrib.admin.utils import unquote, flatten_fieldsets
 from django.core.exceptions import PermissionDenied
 from django.forms import all_valid
 from django.utils.translation import gettext as _
+from django.conf import settings
 
 
 class CommonAdmin(admin.ModelAdmin):
@@ -23,17 +24,10 @@ class CommonAdmin(admin.ModelAdmin):
         return super().add_view(request, form_url, extra_context)
 
     def get_changeform_initial_data(self, request):
-        # TODO 有没有可能通用
         initial = super().get_changeform_initial_data(request)
-        table_name = request.session.get('table_name')
-        server_name = request.session.get('server_name')
-        start_date = request.session.get('start_date')
-        end_date = request.session.get('end_date')
-        if server_name:
-            initial['table_name'] = table_name
-            initial['server_name'] = server_name
-            initial['start_date'] = start_date
-            initial['end_date'] = end_date
+        for key in request.session.keys():
+            if key.endswith(settings.SESSION_VAR_SUFFIX):
+                initial[f'{key[:-2]}'] = request.session.get(key)
         return initial
 
     def _changeform_view(self, request, object_id, form_url, extra_context):

@@ -9,6 +9,7 @@ from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 
+from common.session_utils import post_data_to_session
 from redshift.models import Snapshot, Table, RestoreTableTask, RestoreClusterTask, Cluster
 from redshift.util.corp_wechat import send_message
 
@@ -30,6 +31,7 @@ def refresh_clusters(request):
     return redirect(reverse('admin:redshift_cluster_changelist'))
 
 
+@post_data_to_session
 def refresh_snapshots(request):
     snapshots = []
     client = boto3.client('redshift')
@@ -63,9 +65,6 @@ def refresh_snapshots(request):
     if snapshots:
         Snapshot.objects.all().delete()
         Snapshot.objects.bulk_create(snapshots)
-
-    request.session['start_date'] = start_date
-    request.session['end_date'] = end_date
 
     return redirect(reverse('admin:redshift_snapshot_changelist'))
 
@@ -101,7 +100,8 @@ def launch_restore_table_task(request, task_id):
     conn = psycopg2.connect(dns)
     cursor = conn.cursor()
     for table in task.tables.all():
-        target_table_name = table.name.split(".")[2] + f'_{(task.snapshot.create_time + timedelta(hours=8)).strftime("%Y%m%d%H%M")}'
+        target_table_name = table.name.split(".")[
+                                2] + f'_{(task.snapshot.create_time + timedelta(hours=8)).strftime("%Y%m%d%H%M")}'
         cursor.execute(f"""
             select 1 from svv_redshift_tables where schema_name = 'temp' and table_name = '{target_table_name}'
         """)
@@ -162,7 +162,9 @@ def launch_restore_cluster_task(request, task_id):
     task = RestoreClusterTask.objects.get(id=task_id)
     cluster_id = task.snapshot.cluster
     snapshot_id = task.snapshot.identifier
-    local_datetime_from_snapshot_id = (datetime.strptime(snapshot_id[-19:], "%Y-%m-%d-%H-%M-%S") + timedelta(hours=8)).strftime('%Y%m%dT%H%M%S')
+    local_datetime_from_snapshot_id = (
+                datetime.strptime(snapshot_id[-19:], "%Y-%m-%d-%H-%M-%S") + timedelta(hours=8)).strftime(
+        '%Y%m%dT%H%M%S')
     restore_cluster_id = f'{cluster_id}-snapshot-{local_datetime_from_snapshot_id}'
 
     cluster_addr = f'https://cn-northwest-1.console.amazonaws.cn/redshiftv2/home?' \
@@ -205,6 +207,7 @@ def launch_restore_cluster_task(request, task_id):
 
             time.sleep(15)
 
-        send_message(f'###### 从快照 [{snapshot_id}]({host}{snapshot_url}) 创建集群 [{restore_cluster_id.lower()}]({cluster_addr}) 成功')
+        send_message(
+            f'###### 从快照 [{snapshot_id}]({host}{snapshot_url}) 创建集群 [{restore_cluster_id.lower()}]({cluster_addr}) 成功')
 
     return HttpResponse('恢复集群成功')

@@ -1,0 +1,8 @@
+/*增加自动补全外键宽度*/
+.select2-container--admin-autocomplete {
+    min-width: 100% !important;
+}
+
+.vTextField, .vURLField {
+    width: 60% !important;
+}
