@@ -2,7 +2,8 @@
 
 {% block object-tools-items %}
     <li><label for="id_table">表: </label><input type="text" id="id_table" value="{{ search_table }}"/></li>
-    <li><a id="id_refresh_tasks" href="{% url 'dms:refresh_tasks' %}">刷新列表super }}
+    <li><a id="id_refresh_tasks" href="{% url 'dms:refresh_tasks' %}">刷新任务</a></li>
+    {{ block.super }}
     <script>
         const btn_refresh_tasks = django.jQuery('#id_refresh_tasks');
         const input_table = django.jQuery('#id_table');
