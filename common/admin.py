@@ -17,8 +17,7 @@ class CommonAdmin(admin.ModelAdmin):
         pass
 
     def add_view(self, request, form_url="", extra_context=None):
-        if not extra_context:
-            extra_context = {}
+        extra_context = extra_context or {}
         extra_context['show_save_and_continue'] = False
         extra_context['show_save_and_add_another'] = False
         return super().add_view(request, form_url, extra_context)
