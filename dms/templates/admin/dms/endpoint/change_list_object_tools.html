@@ -2,7 +2,7 @@
 
 {% block object-tools-items %}
     <li><label for="id_server_name">数据库地址: </label><input type="text" id="id_server_name" value="{{ server_name }}" style="width: 550px;"/></li>
-    <li><a id="id_refresh_endpoints" href="{% url 'dms:refresh_endpoints' %}">刷新端点</a></li>
+    <li><a id="id_refresh_endpoints" href="{% url 'dms:refresh_endpoints' %}">刷新列表</a></li>
     {{ block.super }}
     <script>
         const btn_refresh_endpoints = django.jQuery('#id_refresh_endpoints');

@@ -52,7 +52,7 @@ def refresh_tasks(request):
 def refresh_endpoints(request):
     endpoints = []
     client = boto3.client('dms')
-    server_name = request.GET.get('server_name')
+    server_name = request.POST.get('server_name')
     paginator = client.get_paginator('describe_endpoints')
     for page in paginator.paginate():
         for endpoint in page['Endpoints']:

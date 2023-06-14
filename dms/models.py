@@ -22,6 +22,7 @@ class Endpoint(models.Model):
     identifier = models.CharField('ID', max_length=255, unique=True)
     arn = models.CharField('ARN', max_length=255)
     database = models.CharField('数据库', max_length=32, null=True)
+    server_name = models.CharField('数据库地址', max_length=255)
     url = models.URLField(max_length=255)
 
     def __str__(self):
