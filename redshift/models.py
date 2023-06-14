@@ -29,6 +29,10 @@ class Snapshot(models.Model):
     create_time = models.DateTimeField('创建时间')
     create_time_str = models.CharField(max_length=32)
 
+    # UI字段
+    start_date = models.DateField('开始日期', blank=True, null=True)
+    end_date = models.DateField('结束日期', blank=True, null=True)
+
     def __str__(self):
         suffix = self.identifier[-19:]
         suffix_offset = datetime.strptime(suffix, '%Y-%m-%d-%H-%M-%S') + timedelta(hours=8)

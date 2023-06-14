@@ -8,7 +8,7 @@ from dms.models import Task, Endpoint
 def refresh_tasks(request):
     tasks = []
     client = boto3.client('dms')
-    table_name = request.GET.get('search_table')
+    table_name = request.POST.get('table_name')
     endpoint_id = request.GET.get('endpoint_id')
     paginator = client.get_paginator('describe_replication_tasks')
     for page in paginator.paginate():
@@ -44,7 +44,7 @@ def refresh_tasks(request):
         Task.objects.all().delete()
         Task.objects.bulk_create(tasks)
 
-    request.session['search_table'] = table_name
+    request.session['table_name'] = table_name
 
     return redirect(reverse('admin:dms_task_changelist'))
 

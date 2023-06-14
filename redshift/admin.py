@@ -3,8 +3,9 @@ from django.contrib import admin
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
+from common.admin import CommonAdmin
 from redshift.models import Snapshot, Table, RestoreTableTask, RestoreClusterTask, Cluster
-
+from redshift.views import refresh_snapshots
 
 admin.site.site_title = '我的AWS控制台'
 admin.site.site_header = '我的AWS控制台'
@@ -35,11 +36,29 @@ class ClusterAdmin(PermissionAdmin):
 
 
 @admin.register(Snapshot)
-class SnapshotAdmin(PermissionAdmin):
+class SnapshotAdmin(CommonAdmin):
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def my_handler(self, request):
+        return refresh_snapshots(request)
+
+    def get_exclude(self, request, obj=None):
+        exclude = []
+        if obj:
+            exclude.extend(('start_date', 'end_date', 'create_time_str', ))
+        else:
+            exclude.extend(('cluster', 'identifier', 'create_time', 'create_time_str', ))
+        return exclude
+
     date_hierarchy = 'create_time'
     search_fields = (
         'create_time_str',
     )
+    list_display_links = ('__str__', )
     list_display = (
         '__str__',
         'html_actions',

@@ -33,15 +33,15 @@ def refresh_clusters(request):
 def refresh_snapshots(request):
     snapshots = []
     client = boto3.client('redshift')
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
+    start_date = request.POST.get('start_date')
+    end_date = request.POST.get('end_date')
     if start_date:
-        start_time = datetime.strptime(start_date, '%m/%d/%Y') - timedelta(hours=8)
+        start_time = datetime.strptime(start_date, '%Y/%m/%d') - timedelta(hours=8)
     else:
         # redshift集群快照最多只能保存35天
         start_time = datetime.utcnow() - timedelta(days=35)
     if end_date:
-        end_time = datetime.strptime(end_date, '%m/%d/%Y') + timedelta(hours=16)
+        end_time = datetime.strptime(end_date, '%Y/%m/%d') + timedelta(hours=16)
     else:
         # redshift集群快照最多只能保存35天
         end_time = datetime.utcnow()
