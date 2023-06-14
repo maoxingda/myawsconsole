@@ -6,8 +6,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/jquery-ui.min.js"></script>
     <li><label for="id_start_date">开始日期: </label><input type="text" id="id_start_date" value="{{ start_date }}"/></li>
     <li><label for="id_end_date">结束日期: </label><input type="text" id="id_end_date" value="{{ end_date }}"/></li>
-    <li><a id="id_refresh_snapshots" href="{% url 'redshift:refresh_snapshots' %}{% if start_date %}?start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">刷新快照</a></li>
-    <script>
+    <li><a id="id_refresh_snapshots" href="{% url 'redshift:refresh_snapshots' %}{% if start_date %}?start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">刷新列表script>
         const btn_refresh_snapshots = $('#id_refresh_snapshots');
         const input_start_date = $('#id_start_date');
         const input_end_date = $('#id_end_date');
