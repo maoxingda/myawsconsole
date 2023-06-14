@@ -30,6 +30,7 @@ class CommonAdmin(admin.ModelAdmin):
                 initial[f'{key[:-2]}'] = request.session.get(key)
         return initial
 
+    # TODO Django版本发生更新时，记得比对父类的实现是否有更新
     def _changeform_view(self, request, object_id, form_url, extra_context):
         to_field = request.POST.get(TO_FIELD_VAR, request.GET.get(TO_FIELD_VAR))
         if to_field and not self.to_field_allowed(request, to_field):
