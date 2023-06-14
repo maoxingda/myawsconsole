@@ -65,10 +65,10 @@ class SnapshotAdmin(CommonAdmin):
         buttons = []
 
         add_url = reverse('admin:redshift_restoretabletask_add')
-        botton1 = f'<a href="{add_url}?snapshot={obj.id}">恢复 表</a>'
+        botton1 = f'恢复 <a href="{add_url}?snapshot={obj.id}">【表】</a>'
 
         add_url = reverse('admin:redshift_restoreclustertask_add')
-        botton2 = f'<a href="{add_url}?snapshot={obj.id}">集群 任务</a>'
+        botton2 = f'<a href="{add_url}?snapshot={obj.id}">【集群】</a> 任务'
 
         buttons.append(botton1)
         buttons.append(botton2)
