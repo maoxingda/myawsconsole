@@ -2,7 +2,7 @@ import requests
 
 
 def send_message(msg):
-    log_wechat_robot_url = 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=9adc2280-d8b4-414f-ad60-0c15203f32a4'
+    log_wechat_robot_url = 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=91935d40-1fae-4b63-82c0-d60e3eebf28a'
     json_data = {
         'msgtype': 'markdown',
         'markdown': {

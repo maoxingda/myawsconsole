@@ -46,7 +46,7 @@ def refresh_tasks(request):
         Task.objects.all().delete()
         Task.objects.bulk_create(tasks)
 
-    return redirect(reverse('admin:dms_task_changelist'))
+    return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist'))
 
 
 @post_data_to_session
@@ -70,4 +70,4 @@ def refresh_endpoints(request):
         Endpoint.objects.all().delete()
         Endpoint.objects.bulk_create(endpoints)
 
-    return redirect(reverse('admin:dms_endpoint_changelist'))
+    return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist'))

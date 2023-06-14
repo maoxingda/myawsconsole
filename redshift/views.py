@@ -28,7 +28,7 @@ def refresh_clusters(request):
     if clusters:
         Cluster.objects.bulk_create(clusters)
 
-    return redirect(reverse('admin:redshift_cluster_changelist'))
+    return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist'))
 
 
 @post_data_to_session
@@ -45,7 +45,6 @@ def refresh_snapshots(request):
     if end_date:
         end_time = datetime.strptime(end_date, '%Y/%m/%d') + timedelta(hours=16)
     else:
-        # redshift集群快照最多只能保存35天
         end_time = datetime.utcnow()
     paginator = client.get_paginator('describe_cluster_snapshots')
     snapshot_identifier_pattern = re.compile(r'\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d$')
@@ -66,7 +65,7 @@ def refresh_snapshots(request):
         Snapshot.objects.all().delete()
         Snapshot.objects.bulk_create(snapshots)
 
-    return redirect(reverse('admin:redshift_snapshot_changelist'))
+    return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist'))
 
 
 def refresh_tables(request):
@@ -90,7 +89,7 @@ def refresh_tables(request):
         Table.objects.all().delete()
         Table.objects.bulk_create(tables)
 
-    return redirect(reverse('admin:redshift_table_changelist'))
+    return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist'))
 
 
 def launch_restore_table_task(request, task_id):
