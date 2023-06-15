@@ -61,8 +61,8 @@ def refresh_snapshots(request):
                 )
             )
 
+    Snapshot.objects.all().delete()
     if snapshots:
-        Snapshot.objects.all().delete()
         Snapshot.objects.bulk_create(snapshots)
 
     return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist'))
@@ -85,8 +85,8 @@ def refresh_tables(request):
                 if not suffix_filter.search(table_name):
                     tables.append(Table(name=table_name, schema=schema))
 
+    Table.objects.all().delete()
     if tables:
-        Table.objects.all().delete()
         Table.objects.bulk_create(tables)
 
     return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist'))

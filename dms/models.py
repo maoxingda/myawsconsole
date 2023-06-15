@@ -36,6 +36,7 @@ class Endpoint(models.Model):
     class Meta:
         verbose_name = '端点'
         verbose_name_plural = '端点'
+        ordering = ('identifier', 'database', )
 
     # 数据字段
     identifier = models.CharField('ID', max_length=255, unique=True)

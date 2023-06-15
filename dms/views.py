@@ -45,8 +45,8 @@ def refresh_tasks(request):
                 if find:
                     break
 
+    Task.objects.all().delete()
     if tasks:
-        Task.objects.all().delete()
         Task.objects.bulk_create(tasks)
 
     return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist'))
@@ -69,8 +69,8 @@ def refresh_endpoints(request):
                         f'region=cn-northwest-1#endpointDetails/{endpoint["EndpointIdentifier"]}'
                 ))
 
+    Endpoint.objects.all().delete()
     if endpoints:
-        Endpoint.objects.all().delete()
         Endpoint.objects.bulk_create(endpoints)
 
     return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist'))
@@ -86,9 +86,9 @@ def refresh_tables(request, task_id):
         for stat in page['TableStatistics']:
             tables.add((partition_table_name_suffix_pattern.sub('', stat['TableName']), stat['SchemaName']))
 
+    Table.objects.all().delete()
     if tables:
         tables = [Table(name=table[0], schema=table[1]) for table in tables]
-        Table.objects.all().delete()
         Table.objects.bulk_create(tables)
 
     return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist'))
