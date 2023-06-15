@@ -36,6 +36,7 @@ def refresh_tasks(request):
                     if table_name in stat['TableName']:
                         tasks.append(Task(
                             name=task['ReplicationTaskIdentifier'],
+                            arn=task['ReplicationTaskArn'],
                             url=f"https://cn-northwest-1.console.amazonaws.cn/dms/v2/home?"
                                 f"region=cn-northwest-1#taskDetails/{task['ReplicationTaskIdentifier']}",
                             table_mappings=task['TableMappings']
