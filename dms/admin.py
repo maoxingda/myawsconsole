@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 from common.admin import CommonAdmin
-from dms.models import Task, Endpoint
+from dms.models import Task, Endpoint, Table
 from dms.views import refresh_endpoints, refresh_tasks
 
 
@@ -24,8 +24,7 @@ class TaskAdmin(CommonAdmin):
     def get_fields(self, request, obj=None):
         fields = []
         if obj:
-            fields.append('name')
-            fields.append('format_table_mappings')
+            fields.extend(['name', 'format_table_mappings'])
         else:
             fields.append('table_name')
         return fields
@@ -33,6 +32,7 @@ class TaskAdmin(CommonAdmin):
     @admin.display(description='操作')
     def html_actions(self, obj):
         buttons = [
+            f'<a href="{reverse("dms:refresh_tables", args=(obj.id, ))}">同步的表</a>',
             f'<a href="{obj.url}">AWS控制台</a>',
         ]
 
@@ -45,6 +45,21 @@ class TaskAdmin(CommonAdmin):
 
     def my_handler(self, request):
         return refresh_tasks(request)
+
+
+@admin.register(Table)
+class TableAdmin(admin.ModelAdmin):
+    search_fields = ('name', )
+    list_filter = ('schema', )
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_add_permission(self, request):
+        return False
 
 
 @admin.register(Endpoint)

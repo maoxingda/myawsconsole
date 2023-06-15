@@ -1,9 +1,11 @@
+import re
+
 import boto3
 from django.shortcuts import redirect
 from django.urls import reverse
 
 from common.session_utils import post_data_to_session
-from dms.models import Task, Endpoint
+from dms.models import Task, Endpoint, Table
 
 
 @post_data_to_session
@@ -20,6 +22,7 @@ def refresh_tasks(request):
                 if endpoint.arn in (task['SourceEndpointArn'], task['TargetEndpointArn']):
                     tasks.append(Task(
                         name=task['ReplicationTaskIdentifier'],
+                        arn=task['ReplicationTaskArn'],
                         url=f"https://cn-northwest-1.console.amazonaws.cn/dms/v2/home?"
                             f"region=cn-northwest-1#taskDetails/{task['ReplicationTaskIdentifier']}",
                         table_mappings=task['TableMappings']
@@ -69,5 +72,23 @@ def refresh_endpoints(request):
     if endpoints:
         Endpoint.objects.all().delete()
         Endpoint.objects.bulk_create(endpoints)
+
+    return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist'))
+
+
+def refresh_tables(request, task_id):
+    task = Task.objects.get(id=task_id)
+    client = boto3.client('dms')
+    paginator = client.get_paginator('describe_table_statistics')
+    tables = set()
+    partition_table_name_suffix_pattern = re.compile(r'_\d+\w*$')
+    for page in paginator.paginate(ReplicationTaskArn=task.arn):
+        for stat in page['TableStatistics']:
+            tables.add((partition_table_name_suffix_pattern.sub('', stat['TableName']), stat['SchemaName']))
+
+    if tables:
+        tables = [Table(name=table[0], schema=table[1]) for table in tables]
+        Table.objects.all().delete()
+        Table.objects.bulk_create(tables)
 
     return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist'))
