@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 import boto3
 import psycopg2
+from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -166,10 +167,8 @@ def launch_restore_cluster_task(request, task_id):
         '%Y%m%dT%H%M%S')
     restore_cluster_id = f'{cluster_id}-snapshot-{local_datetime_from_snapshot_id}'
 
-    cluster_addr = f'https://cn-northwest-1.console.amazonaws.cn/redshiftv2/home?' \
-                   f'region=cn-northwest-1#cluster-details?cluster={restore_cluster_id.lower()}'
+    cluster_addr = f'{settings.AWS_URL}#cluster-details?cluster={restore_cluster_id.lower()}'
     snapshot_url = reverse("admin:redshift_snapshot_change", kwargs={'object_id': task.snapshot.id})
-    host = 'http://127.0.0.1:8000' if os.getlogin() == 'root' else 'http://127.0.0.1:8089'
 
     is_find = False
     paginator = client.get_paginator('describe_clusters')
@@ -207,6 +206,6 @@ def launch_restore_cluster_task(request, task_id):
             time.sleep(15)
 
         send_message(
-            f'###### 从快照 [{snapshot_id}]({host}{snapshot_url}) 创建集群 [{restore_cluster_id.lower()}]({cluster_addr}) 成功')
+            f'###### 从快照 [{snapshot_id}]({settings.MY_AWS_URL}{snapshot_url}) 创建集群 [{restore_cluster_id.lower()}]({cluster_addr}) 成功')
 
     return HttpResponse('恢复集群成功')
