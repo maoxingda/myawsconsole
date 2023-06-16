@@ -1,7 +1,9 @@
+import json
 import re
 
 import boto3
 from django.conf import settings
+from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 
@@ -91,3 +93,12 @@ def refresh_tables(request, task_id):
         Table.objects.bulk_create(tables)
 
     return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist'))
+
+
+def download_table_mapping(request, task_id):
+    task = Task.objects.get(id=task_id)
+
+    return JsonResponse({
+        'name': task.name,
+        'table_mappings': json.dumps(task.table_mappings, indent=2)
+    })
