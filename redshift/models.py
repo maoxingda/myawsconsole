@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from enum import Enum
 
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
@@ -73,9 +74,15 @@ class RestoreClusterTask(TimeStampedModel):
         verbose_name = '恢复集群任务'
         verbose_name_plural = '恢复集群任务'
 
+    class StatusEnum(Enum):
+        CREATED = 0
+        RUNNING = 1
+        COMPELETED = 2
+
     name = models.CharField('名称', max_length=128)
     snapshot = models.ForeignKey(Snapshot, verbose_name='快照', null=True, on_delete=models.SET_NULL)
     is_nofity = models.BooleanField('是否发送完成通知', default=True)
+    status = models.CharField('状态', max_length=32, default=StatusEnum.CREATED.name)
 
     def __str__(self):
         return self.name

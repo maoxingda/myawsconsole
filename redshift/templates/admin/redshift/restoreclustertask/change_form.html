@@ -7,10 +7,10 @@
 
 {% block object-tools-items %}
     <li>
-        <a id="id_launch" href="{% url 'redshift:launch_restore_cluster_task' object_id %}" onclick="return false;">启动</a>
+        <a id="id_launch" href="{% url 'redshift:launch_restore_cluster_task' object_id %}" onclick="return false;" {% if adminform.form.instance.status != 'CREATED' %}style="display: none;"{% endif %}>启动</a>
     </li>
     <li>
-        <a id="id_running" href="#" onclick="return false;" style="display: none; background-color: #75f94c; color: red;">运行中...</a>
+        <a id="id_running" href="#" onclick="return false;" style="{% if adminform.form.instance.status != 'RUNNING' %}display: none; {% endif %}background-color: #75f94c; color: red;">运行中...</a>
     </li>
     {{ block.super }}
 {% endblock %}

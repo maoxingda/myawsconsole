@@ -1,4 +1,5 @@
 import boto3
+from django.conf import settings
 from django.contrib import admin
 from django.urls import reverse
 from django.utils.safestring import mark_safe
@@ -24,6 +25,19 @@ class PermissionAdmin(admin.ModelAdmin):
 
 @admin.register(Cluster)
 class ClusterAdmin(PermissionAdmin):
+    list_display = ('identifier', 'html_actions', )
+
+    @admin.display(description='操作')
+    def html_actions(self, obj):
+        buttons = []
+
+        cluster_addr = f'{settings.AWS_REDSHIFT_URL}#cluster-details?cluster={obj.identifier.lower()}'
+        botton1 = f'<a href="{cluster_addr}">AWS控制台</a>'
+
+        buttons.append(botton1)
+
+        return mark_safe(' / '.join(buttons))
+
     def has_delete_permission(self, request, obj=None):
         return True
 
@@ -33,6 +47,12 @@ class ClusterAdmin(PermissionAdmin):
             cluster = Cluster.objects.get(id=object_id)
             client.delete_cluster(ClusterIdentifier=cluster.identifier, SkipFinalClusterSnapshot=True)
         return super().delete_view(request, object_id, extra_context)
+
+    def delete_queryset(self, request, queryset):
+        client = boto3.client('redshift')
+        for cluster in queryset:
+            client.delete_cluster(ClusterIdentifier=cluster.identifier, SkipFinalClusterSnapshot=True)
+        super().delete_queryset(request, queryset)
 
 
 @admin.register(Snapshot)
@@ -93,3 +113,4 @@ class RestorTableTaskAdmin(admin.ModelAdmin):
 class RestoreClusterTaskAdmin(admin.ModelAdmin):
     autocomplete_fields = ('snapshot', )
     list_display = ('name', 'snapshot', )
+    readonly_fields = ('status', )

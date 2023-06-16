@@ -26,7 +26,7 @@ def refresh_tasks(request):
                     tasks.append(Task(
                         name=task['ReplicationTaskIdentifier'],
                         arn=task['ReplicationTaskArn'],
-                        url=f"{settings.AWS_URL}#taskDetails/{task['ReplicationTaskIdentifier']}",
+                        url=f"{settings.AWS_DMS_URL}#taskDetails/{task['ReplicationTaskIdentifier']}",
                         table_mappings=task['TableMappings']
                     ))
                 continue
@@ -39,7 +39,7 @@ def refresh_tasks(request):
                         tasks.append(Task(
                             name=task['ReplicationTaskIdentifier'],
                             arn=task['ReplicationTaskArn'],
-                            url=f"{settings.AWS_URL}#taskDetails/{task['ReplicationTaskIdentifier']}",
+                            url=f"{settings.AWS_DMS_URL}#taskDetails/{task['ReplicationTaskIdentifier']}",
                             table_mappings=task['TableMappings']
                         ))
                         find = True
@@ -67,7 +67,7 @@ def refresh_endpoints(request):
                     identifier=endpoint['EndpointIdentifier'],
                     arn=endpoint['EndpointArn'],
                     database=endpoint['DatabaseName'] if endpoint.get('DatabaseName') else None,
-                    url=f'{settings.AWS_URL}#endpointDetails/{endpoint["EndpointIdentifier"]}'
+                    url=f'{settings.AWS_DMS_URL}#endpointDetails/{endpoint["EndpointIdentifier"]}'
                 ))
 
     Endpoint.objects.all().delete()

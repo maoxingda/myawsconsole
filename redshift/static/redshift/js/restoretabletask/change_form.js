@@ -1,12 +1,12 @@
 'use strict'
 {
     django.jQuery(function () {
+        const btn_running = django.jQuery('#id_running');
         django.jQuery('#id_launch').click(function () {
             django.jQuery(this).toggle();
-            django.jQuery('#id_running').toggle();
+            btn_running.toggle();
             django.jQuery.get(django.jQuery(this).prop('href'), function () {
-                django.jQuery('#id_launch').toggle();
-                django.jQuery('#id_running').toggle();
+                btn_running.text('已完成...');
             });
         });
     });

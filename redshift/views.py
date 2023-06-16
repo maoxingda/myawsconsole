@@ -160,6 +160,8 @@ def launch_restore_table_task(request, task_id):
 def launch_restore_cluster_task(request, task_id):
     client = boto3.client('redshift')
     task = RestoreClusterTask.objects.get(id=task_id)
+    task.status = RestoreClusterTask.StatusEnum.RUNNING.name
+    task.save()
     cluster_id = task.snapshot.cluster
     snapshot_id = task.snapshot.identifier
     local_datetime_from_snapshot_id = (
@@ -167,7 +169,7 @@ def launch_restore_cluster_task(request, task_id):
         '%Y%m%dT%H%M%S')
     restore_cluster_id = f'{cluster_id}-snapshot-{local_datetime_from_snapshot_id}'
 
-    cluster_addr = f'{settings.AWS_URL}#cluster-details?cluster={restore_cluster_id.lower()}'
+    cluster_addr = f'{settings.AWS_REDSHIFT_URL}#cluster-details?cluster={restore_cluster_id.lower()}'
     snapshot_url = reverse("admin:redshift_snapshot_change", kwargs={'object_id': task.snapshot.id})
 
     is_find = False
@@ -207,5 +209,8 @@ def launch_restore_cluster_task(request, task_id):
 
         send_message(
             f'###### 从快照 [{snapshot_id}]({settings.MY_AWS_URL}{snapshot_url}) 创建集群 [{restore_cluster_id.lower()}]({cluster_addr}) 成功')
+
+    task.status = RestoreClusterTask.StatusEnum.COMPELETED.name
+    task.save()
 
     return HttpResponse('恢复集群成功')
