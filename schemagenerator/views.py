@@ -215,7 +215,17 @@ def launch_task(request, task_id):
                 ]
             )
             target_endpoint_arn = response['Endpoints'][0]['EndpointArn']
-            replication_instance_arn = ''  # TODO
+            response = client.describe_replication_instances(
+                Filters=[
+                    {
+                        'Name': 'replication-instance-id',
+                        'Values': [
+                            'hc-replica-server-private'
+                        ]
+                    }
+                ]
+            )
+            replication_instance_arn = response['ReplicationInstances'][0]['ReplicationInstanceArn']
 
         is_find = False
         replication_task_arn = ''
@@ -275,7 +285,7 @@ def launch_task(request, task_id):
         task.status = Task.StatusEnum.COMPLETED.name
         task.save()
     except:
-        task.status = Task.StatusEnum.COMPLETED.CREATED
+        task.status = Task.StatusEnum.COMPLETED.CREATED.name
         task.save()
 
     return HttpResponse()
