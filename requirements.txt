@@ -4,3 +4,4 @@ django-extensions==3.2.1
 psycopg2-binary==2.9.6
 requests==2.31.0
 whitenoise==6.4.0
+mysql-connector-python==8.0.33

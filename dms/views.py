@@ -26,6 +26,7 @@ def refresh_tasks(request):
                     tasks.append(Task(
                         name=task['ReplicationTaskIdentifier'],
                         arn=task['ReplicationTaskArn'],
+                        source_endpoint_arn=task['SourceEndpointArn'],
                         url=f"{settings.AWS_DMS_URL}#taskDetails/{task['ReplicationTaskIdentifier']}",
                         table_mappings=task['TableMappings']
                     ))
@@ -39,6 +40,7 @@ def refresh_tasks(request):
                         tasks.append(Task(
                             name=task['ReplicationTaskIdentifier'],
                             arn=task['ReplicationTaskArn'],
+                            source_endpoint_arn=task['SourceEndpointArn'],
                             url=f"{settings.AWS_DMS_URL}#taskDetails/{task['ReplicationTaskIdentifier']}",
                             table_mappings=task['TableMappings']
                         ))
@@ -58,7 +60,7 @@ def refresh_tasks(request):
 def refresh_endpoints(request):
     endpoints = []
     client = boto3.client('dms')
-    server_name = request.POST.get('server_name')
+    server_name = request.POST.get('server_name', request.GET.get('server_name'))
     paginator = client.get_paginator('describe_endpoints')
     for page in paginator.paginate():
         for endpoint in page['Endpoints']:
@@ -82,7 +84,7 @@ def refresh_tables(request, task_id):
     client = boto3.client('dms')
     paginator = client.get_paginator('describe_table_statistics')
     tables = set()
-    partition_table_name_suffix_pattern = re.compile(r'_\d+\w*$')
+    partition_table_name_suffix_pattern = re.compile(r'_p?\d+\w*$')
     for page in paginator.paginate(ReplicationTaskArn=task.arn):
         for stat in page['TableStatistics']:
             tables.add((partition_table_name_suffix_pattern.sub('', stat['TableName']), stat['SchemaName']))

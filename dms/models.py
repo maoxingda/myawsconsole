@@ -12,6 +12,7 @@ class Task(models.Model):
     arn = models.CharField('arn', max_length=255)
     url = models.URLField(max_length=255)
     table_mappings = models.JSONField('表映射', max_length=32768, default=dict)
+    source_endpoint_arn = models.CharField('源端点arn', max_length=255, null=True)
 
     # UI字段
     table_name = models.CharField('表名称', max_length=255)

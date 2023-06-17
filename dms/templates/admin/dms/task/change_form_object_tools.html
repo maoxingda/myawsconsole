@@ -27,7 +27,7 @@
                 const now = dayjs().format('YYYY[_]MM[_]DD[T]HH[_]mm[_]ss');
                 const filename = data.name + `-${now}.json`;
                 downloadFile(filename, JSON.parse(data.table_mappings));
-            })
+            });
         });
     </script>
 {% endblock %}

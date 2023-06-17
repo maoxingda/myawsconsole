@@ -6,7 +6,7 @@
         django.jQuery('#id_launch').click(function () {
             django.jQuery(this).toggle();
             btn_running.toggle();
-                status.text('RUNNING');
+            status.text('RUNNING');
             django.jQuery.get(django.jQuery(this).prop('href'), function () {
                 btn_running.text('已完成...');
                 status.text('COMPLETED');
