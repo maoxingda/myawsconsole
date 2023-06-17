@@ -7,9 +7,12 @@ from datetime import datetime, timedelta
 import boto3
 import psycopg2
 import mysql.connector
+from django.conf import settings
+from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse
+from django.utils.safestring import mark_safe
 
 from schemagenerator.models import DbConn, Table, Task
 
@@ -287,9 +290,73 @@ def download_sql(request, task_id):
     return JsonResponse({'name': task.name, 'sql': sql})
 
 
-def db_ajax_tables(request, conn_id):
-    db_conn = DbConn.objects.get(id=conn_id)
-    tables = []
-    for i, table in enumerate(db_conn.db_tables.all()):
-        tables.append({'option_value': i + 1, 'option_text': table.name})
-    return JsonResponse(tables, safe=False)
+def create_ddl_sql(request, task_id):
+    req_schema = request.GET.get('schema')
+    task = get_object_or_404(Task, id=task_id)
+    dns = os.getenv('dns')
+    with psycopg2.connect(dns) as conn:
+        with conn.cursor() as cursor:
+            ddl_sql = ''
+            for sync_table in task.sync_tables.all():
+                query_columns_sql = f"select column_name, data_type, character_maximum_length, numeric_precision, numeric_scale " \
+                                    f"from pg_catalog.svv_all_columns where schema_name = '{task.conn.target_schema}' and " \
+                                    f"table_name = '{task.conn.target_table_name_prefix}{sync_table.table.name}'"
+                print(query_columns_sql)
+                cursor.execute(query_columns_sql)
+                columns = cursor.fetchall()
+                max_column_lengh = max([len(column) + 2 for column, *rest in columns] + [1])
+                max_column_lengh = 25 if max_column_lengh < 25 else max_column_lengh
+
+                external = ''
+                if_not_exists = ''
+                if req_schema == 'emr':
+                    external = 'external '
+                else:
+                    if_not_exists = 'if not exists '
+
+                # ddl_sql += f'drop table if exists {req_schema}.{"db_" if req_schema == "ods" else ""}{table_name_prefix}_{table.name};\n'
+
+                ddl_sql += f'create {external}table {if_not_exists}{req_schema}.{"db_" if req_schema == "ods" else ""}{task.conn.target_table_name_prefix}{sync_table.table.name}\n' \
+                           f'(\n'
+                for column, data_type, column_lengh, numeric_precision, numeric_scale in columns:
+                    column = f'"{column}"'
+                    if data_type in ('smallint', 'integer', 'bigint', 'date', 'timestamp', 'real', 'double precision'):
+                        ddl_sql += f'    {column.ljust(max_column_lengh)} {data_type},\n'
+                    elif data_type in ('timestamp without time zone',):
+                        ddl_sql += f'    {column.ljust(max_column_lengh)} timestamp,\n'
+                    elif data_type in ('numeric',):
+                        ddl_sql += f'    {column.ljust(max_column_lengh)} {data_type}({numeric_precision}, {numeric_scale}),\n'
+                    elif data_type in ('string', 'character varying'):
+                        if column == 'op':
+                            ddl_sql += f'    {column.ljust(max_column_lengh)} char(1),\n'
+                        else:
+                            ddl_sql += f'    {column.ljust(max_column_lengh)} varchar({column_lengh}),\n'
+                    else:
+                        messages.error(request, mark_safe(f'<pre>未知数据类型：{task.conn.target_schema, sync_table.table.name, column, data_type}</pre>'))
+
+                ddl_sql += f"    {'commit_timestamp'.ljust(max_column_lengh)} varchar(50),\n"
+                ddl_sql += f"    {'op'.ljust(max_column_lengh)} char(1),\n"
+                ddl_sql += f"    {'cdc_transact_id'.ljust(max_column_lengh)} varchar(50),\n"
+                if req_schema == 'ods':
+                    ddl_sql += f"    {'event_time'.ljust(max_column_lengh)} varchar(128),\n"
+                    ddl_sql += f"    {'timestamp_executed_insert'.ljust(max_column_lengh)} timestamp default sysdate + interval '8h',\n"
+                    ddl_sql += f"    {'timestamp_executed_update'.ljust(max_column_lengh)} timestamp default sysdate + interval '8h'\n"
+                else:
+                    ddl_sql = ddl_sql[:-2] + '\n'
+                ddl_sql += ')\n'
+                if req_schema == 'emr':
+                    ddl_sql += 'partitioned by (event_time varchar(128))\n'
+                    ddl_sql += 'stored as parquet\n'
+                    ddl_sql += f"location '{task.conn.s3_path}'\n"
+                ddl_sql += f";\n\n"
+
+    if settings.DEBUG:
+        with open(f'{req_schema}-create-table-ddl.sql', 'w') as f:
+            f.write('\n-- 建表语句\n' + ddl_sql)
+
+    messages.info(request, mark_safe(f'<pre>{ddl_sql}</pre>'))
+
+    return JsonResponse({
+        'schema': req_schema,
+        'ddl_sql': ddl_sql
+    })

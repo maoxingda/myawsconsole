@@ -92,6 +92,9 @@ class Task(models.Model):
     def __str__(self):
         return self.name
 
+    def get_absolute_url(self):
+        return f'/{self._meta.app_label}/{self._meta.model_name}/{self.id}/change/'
+
     @admin.display(description='操作')
     def html_actions(self):
         buttons = []

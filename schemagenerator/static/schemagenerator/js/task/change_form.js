@@ -56,5 +56,21 @@
                 downloadFile(filename, data.sql);
             });
         });
+
+        django.jQuery('#id_download_ods_ddl_sql').click(function () {
+            django.jQuery.get(django.jQuery(this).prop('href'), {}, function (data, status) {
+                const now = dayjs().format('YYYY[_]MM[_]DD[T]HH[_]mm[_]ss');
+                const filename = data.schema + `-${now}.sql`;
+                downloadFile(filename, data.ddl_sql);
+            });
+        });
+
+        django.jQuery('#id_download_emr_ddl_sql').click(function () {
+            django.jQuery.get(django.jQuery(this).prop('href'), {}, function (data, status) {
+                const now = dayjs().format('YYYY[_]MM[_]DD[T]HH[_]mm[_]ss');
+                const filename = data.schema + `-${now}.sql`;
+                downloadFile(filename, data.ddl_sql);
+            });
+        });
     });
 }
