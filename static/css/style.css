@@ -6,3 +6,8 @@
 .vTextField, .vURLField {
     width: 80% !important;
 }
+
+/*隐藏内联模型第一列标题*/
+.inline-group .tabular td.original p {
+    display: none;
+}
