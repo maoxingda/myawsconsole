@@ -33,6 +33,7 @@ class DbConnAdmin(admin.ModelAdmin):
     radio_fields = {
         'db_type': admin.HORIZONTAL,
     }
+    view_on_site = False
 
 
 @admin.register(Table)
@@ -63,3 +64,4 @@ class TaskAdmin(admin.ModelAdmin):
     autocomplete_fields = ('conn', )
     # filter_horizontal = ('tables', )
     readonly_fields = ('status', )
+    view_on_site = False

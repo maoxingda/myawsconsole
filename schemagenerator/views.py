@@ -2,12 +2,11 @@ import json
 import os
 import re
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import boto3
-import psycopg2
 import mysql.connector
-from django.conf import settings
+import psycopg2
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, get_object_or_404
@@ -359,12 +358,6 @@ def create_ddl_sql(request, task_id):
                     ddl_sql += 'stored as parquet\n'
                     ddl_sql += f"location '{task.conn.s3_path}'\n"
                 ddl_sql += f";\n\n"
-
-    if settings.DEBUG:
-        with open(f'{req_schema}-create-table-ddl.sql', 'w') as f:
-            f.write('\n-- 建表语句\n' + ddl_sql)
-
-    messages.info(request, mark_safe(f'<pre>{ddl_sql}</pre>'))
 
     return JsonResponse({
         'schema': req_schema,
