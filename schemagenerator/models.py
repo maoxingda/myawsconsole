@@ -68,7 +68,6 @@ class Table(models.Model):
 
     name = models.CharField('表', max_length=128)
     conn = models.ForeignKey(DbConn, verbose_name='数据库地址', on_delete=models.CASCADE, related_name='db_tables')
-    # task = models.ForeignKey('Task', verbose_name='任务', on_delete=models.DO_NOTHING, related_name='task_tables')
 
     def __str__(self):
         return self.name
