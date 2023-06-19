@@ -10,7 +10,7 @@ class Cluster(models.Model):
         verbose_name = '集群'
         verbose_name_plural = '集群'
 
-    identifier = models.CharField('集群', max_length=128)
+    identifier = models.CharField('集群', max_length=128, unique=True)
 
     def __str__(self):
         return self.identifier
@@ -23,6 +23,7 @@ class Snapshot(models.Model):
         ordering = (
             '-create_time',
         )
+        unique_together = ('cluster', 'identifier',)
 
     cluster = models.CharField('集群', max_length=128)
     identifier = models.CharField('快照', max_length=128)

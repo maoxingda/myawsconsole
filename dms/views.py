@@ -17,26 +17,15 @@ def refresh_tasks(request):
     client = boto3.client('dms')
     table_name = request.POST.get('table_name')
     endpoint_id = request.GET.get('endpoint_id')
+    endpoint_arn = ''
     paginator = client.get_paginator('describe_replication_tasks')
     for page in paginator.paginate():
         for task in page['ReplicationTasks']:
             if endpoint_id:
                 endpoint = Endpoint.objects.get(id=endpoint_id)
+                endpoint_arn = endpoint.arn
                 if endpoint.arn in (task['SourceEndpointArn'], task['TargetEndpointArn']):
-                    tasks.append(Task(
-                        name=task['ReplicationTaskIdentifier'],
-                        arn=task['ReplicationTaskArn'],
-                        source_endpoint_arn=task['SourceEndpointArn'],
-                        url=f"{settings.AWS_DMS_URL}#taskDetails/{task['ReplicationTaskIdentifier']}",
-                        table_mappings=task['TableMappings']
-                    ))
-                continue
-
-            dts_paginator = client.get_paginator('describe_table_statistics')
-            for ts_page in dts_paginator.paginate(ReplicationTaskArn=task['ReplicationTaskArn']):
-                find = False
-                for stat in ts_page['TableStatistics']:
-                    if table_name in stat['TableName']:
+                    if not Task.objects.filter(name=task['ReplicationTaskIdentifier']).exists():
                         tasks.append(Task(
                             name=task['ReplicationTaskIdentifier'],
                             arn=task['ReplicationTaskArn'],
@@ -44,16 +33,30 @@ def refresh_tasks(request):
                             url=f"{settings.AWS_DMS_URL}#taskDetails/{task['ReplicationTaskIdentifier']}",
                             table_mappings=task['TableMappings']
                         ))
+                continue
+
+            dts_paginator = client.get_paginator('describe_table_statistics')
+            for ts_page in dts_paginator.paginate(ReplicationTaskArn=task['ReplicationTaskArn']):
+                find = False
+                for stat in ts_page['TableStatistics']:
+                    if table_name in stat['TableName']:
+                        if not Task.objects.filter(name=task['ReplicationTaskIdentifier']).exists():
+                            tasks.append(Task(
+                                name=task['ReplicationTaskIdentifier'],
+                                arn=task['ReplicationTaskArn'],
+                                source_endpoint_arn=task['SourceEndpointArn'],
+                                url=f"{settings.AWS_DMS_URL}#taskDetails/{task['ReplicationTaskIdentifier']}",
+                                table_mappings=task['TableMappings']
+                            ))
                         find = True
                         break
                 if find:
                     break
 
-    Task.objects.all().delete()
     if tasks:
         Task.objects.bulk_create(tasks)
 
-    return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist'))
+    return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist') + f'?q={endpoint_arn}')
 
 
 @post_data_to_session
@@ -65,18 +68,19 @@ def refresh_endpoints(request):
     for page in paginator.paginate():
         for endpoint in page['Endpoints']:
             if server_name == endpoint.get('ServerName'):
-                endpoints.append(Endpoint(
-                    identifier=endpoint['EndpointIdentifier'],
-                    arn=endpoint['EndpointArn'],
-                    database=endpoint['DatabaseName'] if endpoint.get('DatabaseName') else None,
-                    url=f'{settings.AWS_DMS_URL}#endpointDetails/{endpoint["EndpointIdentifier"]}'
-                ))
+                if not Endpoint.objects.filter(identifier=endpoint['EndpointIdentifier']).exists():
+                    endpoints.append(Endpoint(
+                        identifier=endpoint['EndpointIdentifier'],
+                        arn=endpoint['EndpointArn'],
+                        database=endpoint['DatabaseName'] if endpoint.get('DatabaseName') else None,
+                        url=f'{settings.AWS_DMS_URL}#endpointDetails/{endpoint["EndpointIdentifier"]}',
+                        server_name=server_name
+                    ))
 
-    Endpoint.objects.all().delete()
     if endpoints:
         Endpoint.objects.bulk_create(endpoints)
 
-    return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist'))
+    return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist') + f'?q={server_name}')
 
 
 def refresh_tables(request, task_id):
@@ -89,12 +93,15 @@ def refresh_tables(request, task_id):
         for stat in page['TableStatistics']:
             tables.add((partition_table_name_suffix_pattern.sub('', stat['TableName']), stat['SchemaName']))
 
-    Table.objects.all().delete()
+    tables = [
+        Table(name=table[0], schema=table[1], task_name=task.name) for table in tables
+        if not Table.objects.filter(task_name=task.name, name=table[0]).exists()
+    ]
+
     if tables:
-        tables = [Table(name=table[0], schema=table[1]) for table in tables]
         Table.objects.bulk_create(tables)
 
-    return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist'))
+    return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist') + f'?q={task.name}')
 
 
 def download_table_mapping(request, task_id):

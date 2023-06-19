@@ -26,9 +26,11 @@ class Table(models.Model):
         verbose_name = '表'
         verbose_name_plural = '表'
         ordering = ('name', )
+        unique_together = ('task_name', 'name',)
 
-    name = models.CharField('名称', max_length=255, unique=True)
+    name = models.CharField('名称', max_length=255)
     schema = models.CharField(max_length=32)
+    task_name = models.CharField('任务名称', max_length=255, null=True)
 
     def __str__(self):
         return self.name

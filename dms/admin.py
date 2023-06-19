@@ -13,6 +13,7 @@ from dms.views import refresh_endpoints, refresh_tasks
 
 @admin.register(Task)
 class TaskAdmin(CommonAdmin):
+    search_fields = ('name', 'source_endpoint_arn',)
     list_display = ('name', 'html_actions',)
     list_display_links = ('name',)
     readonly_fields = ('format_table_mappings',)
@@ -89,13 +90,11 @@ class TaskAdmin(CommonAdmin):
 
 @admin.register(Table)
 class TableAdmin(admin.ModelAdmin):
-    search_fields = ('name',)
-    list_filter = ('schema',)
+    search_fields = ('name', 'task_name',)
+    list_display = ('name', 'schema', 'task_name',)
+    list_filter = ('task_name', 'schema',)
 
     def has_change_permission(self, request, obj=None):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
         return False
 
     def has_add_permission(self, request):
@@ -104,6 +103,7 @@ class TableAdmin(admin.ModelAdmin):
 
 @admin.register(Endpoint)
 class EndpointAdmin(CommonAdmin):
+    search_fields = ('server_name',)
     list_display = ('identifier', 'database', 'html_actions',)
     fields = ('server_name',)
 

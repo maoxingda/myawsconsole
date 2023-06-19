@@ -23,9 +23,9 @@ def refresh_clusters(request):
     for page in paginator.paginate():
         for cluster in page['Clusters']:
             if restore_cluster_pattern.search(cluster['ClusterIdentifier']) and cluster['ClusterStatus'] == 'available':
-                clusters.append(Cluster(identifier=cluster['ClusterIdentifier']))
+                if not Cluster.objects.filter(identifier=cluster['ClusterIdentifier']).exists():
+                    clusters.append(Cluster(identifier=cluster['ClusterIdentifier']))
 
-    Cluster.objects.all().delete()
     if clusters:
         Cluster.objects.bulk_create(clusters)
 
@@ -53,6 +53,8 @@ def refresh_snapshots(request):
         for snapshot in page['Snapshots']:
             if not snapshot_identifier_pattern.search(snapshot['SnapshotIdentifier']):
                 continue
+            if Snapshot.objects.filter(cluster=snapshot['ClusterIdentifier'], identifier=snapshot['SnapshotIdentifier']).exists():
+                continue
             snapshots.append(
                 Snapshot(
                     create_time=snapshot['SnapshotCreateTime'],
@@ -62,7 +64,6 @@ def refresh_snapshots(request):
                 )
             )
 
-    Snapshot.objects.all().delete()
     if snapshots:
         Snapshot.objects.bulk_create(snapshots)
 
@@ -83,10 +84,9 @@ def refresh_tables(request):
             for row in cursor.fetchall():
                 table_name = row[0]
                 schema = row[1]
-                if not suffix_filter.search(table_name):
+                if not suffix_filter.search(table_name) and not Table.objects.filter(name=table_name).eixsts():
                     tables.append(Table(name=table_name, schema=schema))
 
-    Table.objects.all().delete()
     if tables:
         Table.objects.bulk_create(tables)
 

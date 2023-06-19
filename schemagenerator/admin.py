@@ -40,6 +40,7 @@ class DbConnAdmin(admin.ModelAdmin):
 class TableAdmin(AjaxModelAdmin):
     search_fields = ('name', )
     list_display = ('name', 'conn', )
+    list_filter = ('conn',)
 
     def has_change_permission(self, request, obj=None):
         return False
