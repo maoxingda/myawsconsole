@@ -53,6 +53,9 @@ def refresh_tasks(request):
                 if find:
                     break
 
+    if not endpoint_id:
+        Task.objects.all().delete()
+
     if tasks:
         Task.objects.bulk_create(tasks)
 
