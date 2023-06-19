@@ -162,55 +162,59 @@ def launch_restore_cluster_task(request, task_id):
     task = RestoreClusterTask.objects.get(id=task_id)
     task.status = RestoreClusterTask.StatusEnum.RUNNING.name
     task.save()
-    cluster_id = task.snapshot.cluster
-    snapshot_id = task.snapshot.identifier
-    local_datetime_from_snapshot_id = (
-                datetime.strptime(snapshot_id[-19:], "%Y-%m-%d-%H-%M-%S") + timedelta(hours=8)).strftime(
-        '%Y%m%dT%H%M%S')
-    restore_cluster_id = f'{cluster_id}-snapshot-{local_datetime_from_snapshot_id}'
+    try:
+        cluster_id = task.snapshot.cluster
+        snapshot_id = task.snapshot.identifier
+        local_datetime_from_snapshot_id = (
+                    datetime.strptime(snapshot_id[-19:], "%Y-%m-%d-%H-%M-%S") + timedelta(hours=8)).strftime(
+            '%Y%m%dT%H%M%S')
+        restore_cluster_id = f'{cluster_id}-snapshot-{local_datetime_from_snapshot_id}'
 
-    cluster_addr = f'{settings.AWS_REDSHIFT_URL}#cluster-details?cluster={restore_cluster_id.lower()}'
-    snapshot_url = reverse("admin:redshift_snapshot_change", kwargs={'object_id': task.snapshot.id})
+        cluster_addr = f'{settings.AWS_REDSHIFT_URL}#cluster-details?cluster={restore_cluster_id.lower()}'
+        snapshot_url = reverse("admin:redshift_snapshot_change", kwargs={'object_id': task.snapshot.id})
 
-    is_find = False
-    paginator = client.get_paginator('describe_clusters')
-    for page in paginator.paginate():
-        for cluster in page['Clusters']:
-            if cluster['ClusterIdentifier'] == restore_cluster_id.lower():
-                is_find = True
+        is_find = False
+        paginator = client.get_paginator('describe_clusters')
+        for page in paginator.paginate():
+            for cluster in page['Clusters']:
+                if cluster['ClusterIdentifier'] == restore_cluster_id.lower():
+                    is_find = True
 
-    if is_find:
-        send_message(f'###### 集群：[{restore_cluster_id.lower()}]({cluster_addr}) 已经存在')
-    else:
-        response = client.describe_clusters(ClusterIdentifier=cluster_id)
+        if is_find:
+            send_message(f'###### 集群：[{restore_cluster_id.lower()}]({cluster_addr}) 已经存在')
+        else:
+            response = client.describe_clusters(ClusterIdentifier=cluster_id)
 
-        client.restore_from_cluster_snapshot(
-            ClusterIdentifier=restore_cluster_id,
-            SnapshotIdentifier=snapshot_id,
-            SnapshotClusterIdentifier=cluster_id,
-            ClusterSubnetGroupName=response['Clusters'][0]['ClusterSubnetGroupName'],
-            ClusterParameterGroupName=response['Clusters'][0]['ClusterParameterGroups'][0]['ParameterGroupName'],
-            VpcSecurityGroupIds=[response['Clusters'][0]['VpcSecurityGroups'][0]['VpcSecurityGroupId']],
-        )
+            client.restore_from_cluster_snapshot(
+                ClusterIdentifier=restore_cluster_id,
+                SnapshotIdentifier=snapshot_id,
+                SnapshotClusterIdentifier=cluster_id,
+                ClusterSubnetGroupName=response['Clusters'][0]['ClusterSubnetGroupName'],
+                ClusterParameterGroupName=response['Clusters'][0]['ClusterParameterGroups'][0]['ParameterGroupName'],
+                VpcSecurityGroupIds=[response['Clusters'][0]['VpcSecurityGroups'][0]['VpcSecurityGroupId']],
+            )
 
-        start = datetime.now()
-        # 等待集群状态更新为：Available
-        while True:
-            response = client.describe_clusters(ClusterIdentifier=restore_cluster_id)
+            start = datetime.now()
+            # 等待集群状态更新为：Available
+            while True:
+                response = client.describe_clusters(ClusterIdentifier=restore_cluster_id)
 
-            cluster_status = response['Clusters'][0]['ClusterStatus']
+                cluster_status = response['Clusters'][0]['ClusterStatus']
 
-            print(f'cluster status: {cluster_status}, elapsed: {int((datetime.now() - start).total_seconds())} 秒')
+                print(f'cluster status: {cluster_status}, elapsed: {int((datetime.now() - start).total_seconds())} 秒')
 
-            if cluster_status == 'available':
-                break
+                if cluster_status == 'available':
+                    break
 
-            time.sleep(15)
+                time.sleep(15)
 
-        send_message(
-            f'###### 从快照 [{snapshot_id}]({settings.MY_AWS_URL}{snapshot_url}) 创建集群 [{restore_cluster_id.lower()}]({cluster_addr}) 成功')
+            send_message(
+                f'###### 从快照 [{snapshot_id}]({settings.MY_AWS_URL}{snapshot_url}) 创建集群 [{restore_cluster_id.lower()}]({cluster_addr}) 成功')
 
-    task.status = RestoreClusterTask.StatusEnum.COMPELETED.name
-    task.save()
+        task.status = RestoreClusterTask.StatusEnum.COMPELETED.name
+        task.save()
+    except:
+        task.status = RestoreClusterTask.StatusEnum.CREATED.name
+        task.save()
 
     return HttpResponse('恢复集群成功')
