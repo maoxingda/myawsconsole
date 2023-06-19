@@ -1,3 +1,6 @@
+prod-migrage:
+	ssh pdaf 'conda activate myawsconsole && cd myawsconsole && python manage.py migrate --settings myawsconsole.prod_settings --no-input'
+
 install-requirements:
 	ssh pdaf 'conda activate myawsconsole && cd myawsconsole && pip install -r requirements.txt'
 
