@@ -15,7 +15,7 @@ from dms.models import Task, Endpoint, Table
 def refresh_tasks(request):
     tasks = []
     client = boto3.client('dms')
-    table_name = request.POST.get('table_name')
+    table_name = request.POST.get('table_name', '')
     endpoint_id = request.GET.get('endpoint_id')
     endpoint_arn = ''
     paginator = client.get_paginator('describe_replication_tasks')
@@ -46,20 +46,18 @@ def refresh_tasks(request):
                                 arn=task['ReplicationTaskArn'],
                                 source_endpoint_arn=task['SourceEndpointArn'],
                                 url=f"{settings.AWS_DMS_URL}#taskDetails/{task['ReplicationTaskIdentifier']}",
-                                table_mappings=task['TableMappings']
+                                table_mappings=task['TableMappings'],
+                                table_name=table_name
                             ))
                         find = True
                         break
                 if find:
                     break
 
-    if not endpoint_id:
-        Task.objects.all().delete()
-
     if tasks:
         Task.objects.bulk_create(tasks)
 
-    return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist') + f'?q={endpoint_arn}')
+    return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist') + f'?q={endpoint_arn}{table_name}')
 
 
 @post_data_to_session
@@ -79,6 +77,13 @@ def refresh_endpoints(request):
                         url=f'{settings.AWS_DMS_URL}#endpointDetails/{endpoint["EndpointIdentifier"]}',
                         server_name=server_name
                     ))
+
+    del_endpoints = []
+    for endpoint in Endpoint.objects.filter(identifier__endswith='-sync-schema-source'):
+        if not any([endpoint.identifier == ep.identifier for ep in endpoints]):
+            del_endpoints.append(endpoint)
+    for del_ep in del_endpoints:
+        del_ep.delete()
 
     if endpoints:
         Endpoint.objects.bulk_create(endpoints)
