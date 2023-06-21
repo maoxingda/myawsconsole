@@ -85,6 +85,7 @@ class EndpointAdmin(CommonAdmin):
     search_fields = ('server_name',)
     list_display = ('identifier', 'database', 'html_actions',)
     fields = ('server_name',)
+    actions = ()
 
     @admin.display(description='操作')
     def html_actions(self, obj):
