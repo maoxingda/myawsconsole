@@ -26,7 +26,7 @@ class Table(models.Model):
         verbose_name = '表'
         verbose_name_plural = '表'
         ordering = ('name', )
-        unique_together = ('task_name', 'name',)
+        unique_together = ('task_name', 'schema', 'name',)
 
     name = models.CharField('名称', max_length=255)
     schema = models.CharField(max_length=32)

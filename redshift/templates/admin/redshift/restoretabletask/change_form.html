@@ -3,6 +3,7 @@
 
 {% block extrahead %}{{ block.super }}
     <script src="{% static 'redshift/js/restoretabletask/change_form.js' %}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.8/dayjs.min.js"></script>
 {% endblock %}
 
 {% block object-tools-items %}
@@ -11,6 +12,9 @@
     </li>
     <li>
         <a id="id_running" href="#" onclick="return false;" style="display: none; background-color: #75f94c; color: red;">运行中...</a>
+    </li>
+    <li>
+        <a id="id_download_sql" href="{% url 'redshift:download_sql' object_id %}" onclick="return false;">下载查询SQL</a>
     </li>
     {{ block.super }}
 {% endblock %}

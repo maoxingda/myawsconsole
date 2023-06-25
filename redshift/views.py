@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import boto3
 import psycopg2
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 
@@ -218,3 +218,13 @@ def launch_restore_cluster_task(request, task_id):
         task.save()
 
     return HttpResponse('恢复集群成功')
+
+
+def download_sql(request, task_id):
+    task = RestoreTableTask.objects.get(id=task_id)
+    sqls = []
+    for table in task.tables.all():
+        target_table_name = table.name.split(".")[
+                                2] + f'_{(task.snapshot.create_time + timedelta(hours=8)).strftime("%Y%m%d%H%M")}'
+        sqls.append(f'select * from temp.{target_table_name} limit 1;')
+    return JsonResponse({'sql': sqls, 'name': task.name})
