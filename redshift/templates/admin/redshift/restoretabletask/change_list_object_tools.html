@@ -1,0 +1,38 @@
+{% extends "admin/change_list_object_tools.html" %}
+
+{% block object-tools-items %}
+    <li><a id="id_batch_download_sql" href="#" onclick="return false;">下载查询SQL</a></li>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.8/dayjs.min.js"></script>
+    <script>
+        function downloadFile(filename, content) {
+            const element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content));
+            element.setAttribute('download', filename);
+
+            element.style.display = 'none';
+            document.body.appendChild(element);
+
+            element.click();
+
+            document.body.removeChild(element);
+        }
+
+        django.jQuery(function () {
+            django.jQuery('#id_batch_download_sql').click(function () {
+                let url = '{% url "redshift:batch_download_sql" %}?task_ids='
+                django.jQuery('input[type="checkbox"][name="_selected_action"]').each(function (i, e) {
+                    if (django.jQuery(e).prop('checked')) {
+                        url += django.jQuery(e).val() + ',';
+                    }
+                });
+                django.jQuery.get(url, {}, function (data, status) {
+                    const now = dayjs().format('YYYY[_]MM[_]DD[T]HH[_]mm[_]ss');
+                    const filename = data.name + `-${now}.sql`;
+                    downloadFile(filename, data.sqls);
+                });
+            });
+        });
+    </script>
+
+    {{ block.super }}
+{% endblock %}

@@ -228,3 +228,16 @@ def download_sql(request, task_id):
                                 2] + f'_{(task.snapshot.create_time + timedelta(hours=8)).strftime("%Y%m%d%H%M")}'
         sqls.append(f'select * from temp.{target_table_name} limit 1;')
     return JsonResponse({'sql': sqls, 'name': task.name})
+
+
+def batch_download_sql(request):
+    task_ids = request.GET.get('task_ids', '').split(',')
+    task_ids = [int(task_id) for task_id in task_ids[:-1]]
+    tasks = RestoreTableTask.objects.in_bulk(task_ids).values()
+    sqls = ''
+    for task in tasks:
+        for table in task.tables.all():
+            target_table_name = table.name.split(".")[
+                                    2] + f'_{(task.snapshot.create_time + timedelta(hours=8)).strftime("%Y%m%d%H%M")}'
+            sqls += f'select * from temp.{target_table_name} limit 1;\n'
+    return JsonResponse({'sqls': sqls, 'name': task.name})

@@ -1,9 +1,6 @@
-from datetime import timedelta
-
 import boto3
 from django.conf import settings
 from django.contrib import admin
-from django.http import HttpResponse
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
@@ -110,17 +107,6 @@ class RestorTableTaskAdmin(admin.ModelAdmin):
     autocomplete_fields = ('snapshot', )
     list_display = ('name', 'snapshot', )
     # filter_horizontal = ('tables', )
-    actions = ('download_sql', )
-
-    @admin.action(description='下载查询SQL')
-    def download_sql(self, request, queryset):
-        sqls = []
-        for task in queryset:
-            for table in task.tables.all():
-                target_table_name = table.name.split(".")[
-                                        2] + f'_{(task.snapshot.create_time + timedelta(hours=8)).strftime("%Y%m%d%H%M")}'
-                sqls.append(f'select * from temp.{target_table_name} limit 1;')
-        return HttpResponse('<br />'.join(sqls))
 
 
 @admin.register(RestoreClusterTask)
