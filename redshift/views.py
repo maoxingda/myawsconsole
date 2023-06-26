@@ -95,64 +95,73 @@ def refresh_tables(request):
 
 def launch_restore_table_task(request, task_id):
     task = RestoreTableTask.objects.get(id=task_id)
-    client = boto3.client('redshift')
-    dns = os.getenv('dns')
-    conn = psycopg2.connect(dns)
-    cursor = conn.cursor()
-    for table in task.tables.all():
-        target_table_name = table.name.split(".")[
-                                2] + f'_{(task.snapshot.create_time + timedelta(hours=8)).strftime("%Y%m%d%H%M")}'
-        cursor.execute(f"""
-            select 1 from svv_redshift_tables where schema_name = 'temp' and table_name = '{target_table_name}'
-        """)
-        if cursor.fetchall():
-            print(f'目标表：temp.{target_table_name} 已经存在，跳过...')
-            continue
+    task.status = RestoreTableTask.StatusEnum.RUNNING.name
+    task.save()
+    try:
+        client = boto3.client('redshift')
+        dns = os.getenv('dns')
+        conn = psycopg2.connect(dns)
+        cursor = conn.cursor()
+        for table in task.tables.all():
+            target_table_name = table.name.split(".")[
+                                    2] + f'_{(task.snapshot.create_time + timedelta(hours=8)).strftime("%Y%m%d%H%M")}'
+            cursor.execute(f"""
+                select 1 from svv_redshift_tables where schema_name = 'temp' and table_name = '{target_table_name}'
+            """)
+            if cursor.fetchall():
+                print(f'目标表：temp.{target_table_name} 已经存在，跳过...')
+                continue
 
-        start = datetime.now()
-        # 集群在连续两次恢复快照操作之间必须等待集群状态更新为：Available
-        while True:
-            response = client.describe_clusters(ClusterIdentifier=task.snapshot.cluster)
+            start = datetime.now()
+            # 集群在连续两次恢复快照操作之间必须等待集群状态更新为：Available
+            while True:
+                response = client.describe_clusters(ClusterIdentifier=task.snapshot.cluster)
 
-            cluster_status = response['Clusters'][0]['ClusterAvailabilityStatus']
+                cluster_status = response['Clusters'][0]['ClusterAvailabilityStatus']
 
-            print(f'cluster status: {cluster_status}, elapsed: {int((datetime.now() - start).total_seconds())} 秒')
+                print(f'cluster status: {cluster_status}, elapsed: {int((datetime.now() - start).total_seconds())} 秒')
 
-            if cluster_status == 'Available':
-                break
+                if cluster_status == 'Available':
+                    break
 
-            time.sleep(15)
+                time.sleep(15)
 
-        response = client.restore_table_from_cluster_snapshot(
-            ClusterIdentifier=task.snapshot.cluster,
-            SnapshotIdentifier=task.snapshot.identifier,
-            SourceDatabaseName=table.name.split('.')[0],
-            SourceSchemaName=table.name.split('.')[1],
-            SourceTableName=table.name.split('.')[2],
-            TargetDatabaseName=table.name.split('.')[0],
-            TargetSchemaName='temp',
-            NewTableName=target_table_name,
-        )
-        req_id = response['TableRestoreStatus']['TableRestoreRequestId']
-
-        start = datetime.now()
-        while (datetime.now() - start).total_seconds() / 60 < 15:
-            response = client.describe_table_restore_status(
+            response = client.restore_table_from_cluster_snapshot(
                 ClusterIdentifier=task.snapshot.cluster,
-                TableRestoreRequestId=req_id,
+                SnapshotIdentifier=task.snapshot.identifier,
+                SourceDatabaseName=table.name.split('.')[0],
+                SourceSchemaName=table.name.split('.')[1],
+                SourceTableName=table.name.split('.')[2],
+                TargetDatabaseName=table.name.split('.')[0],
+                TargetSchemaName='temp',
+                NewTableName=target_table_name,
             )
+            req_id = response['TableRestoreStatus']['TableRestoreRequestId']
 
-            status = response['TableRestoreStatusDetails'][0]['Status']
+            start = datetime.now()
+            while (datetime.now() - start).total_seconds() / 60 < 15:
+                response = client.describe_table_restore_status(
+                    ClusterIdentifier=task.snapshot.cluster,
+                    TableRestoreRequestId=req_id,
+                )
 
-            print(f'temp.{target_table_name}, {status}, elapsed: {int((datetime.now() - start).total_seconds())} 秒')
+                status = response['TableRestoreStatusDetails'][0]['Status']
 
-            if status in ['SUCCEEDED', 'FAILED', 'CANCELED']:
-                break
+                print(f'temp.{target_table_name}, {status}, elapsed: {int((datetime.now() - start).total_seconds())} 秒')
 
-            time.sleep(15)
+                if status in ['SUCCEEDED', 'FAILED', 'CANCELED']:
+                    break
 
-    if task.is_nofity:
-        send_message(f'###### 任务：<font color="info">{task.name}</font> 完成')
+                time.sleep(15)
+
+        if task.is_nofity:
+            send_message(f'###### 任务：<font color="info">{task.name}</font> 完成')
+
+        task.status = RestoreTableTask.StatusEnum.COMPLETED.name
+        task.save()
+    except:
+        task.status = RestoreTableTask.StatusEnum.CREATED.name
+        task.save()
 
     return HttpResponse('恢复表任务成功')
 

@@ -8,13 +8,28 @@
 
 {% block object-tools-items %}
     <li>
-        <a id="id_launch" href="{% url 'redshift:launch_restore_table_task' object_id %}" onclick="return false;">启动</a>
+        <a id="id_launch" onclick="return false;"
+           href="{% url 'redshift:launch_restore_table_task' object_id %}">启动</a>
     </li>
     <li>
-        <a id="id_running" href="#" onclick="return false;" style="display: none; background-color: #75f94c; color: red;">运行中...</a>
+        <a id="id_running" onclick="return false;" href="#"
+           style="background-color: #75f94c; color: red;">运行中...</a>
     </li>
     <li>
-        <a id="id_download_sql" href="{% url 'redshift:download_sql' object_id %}" onclick="return false;">下载查询SQL</a>
+        <a id="id_download_sql" onclick="return false;"
+           href="{% url 'redshift:download_sql' object_id %}"
+           style="background-color: #377d22;">下载查询SQL</a>
     </li>
+    <script>
+        {% if adminform.form.instance.status != 'CREATED' %}
+            django.jQuery('#id_launch').toggle();
+        {% endif %}
+        {% if adminform.form.instance.status != 'RUNNING' %}
+            django.jQuery('#id_running').toggle();
+        {% endif %}
+        {% if adminform.form.instance.status != 'COMPLETED' %}
+            django.jQuery('#id_download_sql').toggle();
+        {% endif %}
+    </script>
     {{ block.super }}
 {% endblock %}

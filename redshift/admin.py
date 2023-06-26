@@ -107,6 +107,7 @@ class RestorTableTaskAdmin(admin.ModelAdmin):
     autocomplete_fields = ('snapshot', )
     list_display = ('name', 'snapshot', )
     # filter_horizontal = ('tables', )
+    exclude = ('status', )
 
 
 @admin.register(RestoreClusterTask)

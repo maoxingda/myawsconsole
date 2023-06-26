@@ -61,10 +61,16 @@ class RestoreTableTask(TimeStampedModel):
         verbose_name = '恢复表任务'
         verbose_name_plural = '恢复表任务'
 
+    class StatusEnum(Enum):
+        CREATED = '已创建'
+        RUNNING = '运行中...'
+        COMPLETED = '已完成'
+
     name = models.CharField('名称', max_length=128)
     snapshot = models.ForeignKey(Snapshot, verbose_name='快照', null=True, on_delete=models.SET_NULL)
     tables = models.ManyToManyField(Table, verbose_name='表')
     is_nofity = models.BooleanField('是否发送完成通知', default=True)
+    status = models.CharField('状态', max_length=32, default=StatusEnum.CREATED.name)
 
     def __str__(self):
         return self.name
