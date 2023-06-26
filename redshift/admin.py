@@ -105,7 +105,7 @@ class TableAdmin(PermissionAdmin):
 @admin.register(RestoreTableTask)
 class RestorTableTaskAdmin(admin.ModelAdmin):
     autocomplete_fields = ('snapshot', )
-    list_display = ('name', 'snapshot', )
+    list_display = ('name', 'snapshot', 'status', )
     # filter_horizontal = ('tables', )
     exclude = ('status', )
 
@@ -113,5 +113,5 @@ class RestorTableTaskAdmin(admin.ModelAdmin):
 @admin.register(RestoreClusterTask)
 class RestoreClusterTaskAdmin(admin.ModelAdmin):
     autocomplete_fields = ('snapshot', )
-    list_display = ('name', 'snapshot', )
-    readonly_fields = ('status', )
+    list_display = ('name', 'snapshot', 'status', )
+    exclude = ('status', )
