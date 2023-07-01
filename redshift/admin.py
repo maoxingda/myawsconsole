@@ -60,8 +60,6 @@ class SnapshotAdmin(CommonAdmin):
     date_hierarchy = 'create_time'
     search_fields = ('create_time_str', )
     list_display = ('__str__', 'html_actions', )
-    list_display_links = ('__str__', )
-    exclude = ('create_time_str', )
 
     def has_delete_permission(self, request, obj=None):
         return False
@@ -71,14 +69,6 @@ class SnapshotAdmin(CommonAdmin):
 
     def my_handler(self, request):
         return refresh_snapshots(request)
-
-    def get_exclude(self, request, obj=None):
-        exclude = []
-        if obj:
-            exclude.extend(('start_date', 'end_date', 'create_time_str', ))
-        else:
-            exclude.extend(('cluster', 'identifier', 'create_time', 'create_time_str', ))
-        return exclude
 
     @admin.display(description='操作')
     def html_actions(self, obj):

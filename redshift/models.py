@@ -25,11 +25,11 @@ class Snapshot(models.Model):
         )
         unique_together = ('cluster', 'identifier',)
 
-    cluster = models.CharField('集群', max_length=128)
-    identifier = models.CharField('快照', max_length=128)
+    cluster = models.CharField('集群', max_length=128, editable=False)
+    identifier = models.CharField('快照', max_length=128, editable=False)
 
-    create_time = models.DateTimeField('创建时间')
-    create_time_str = models.CharField(max_length=32)
+    create_time = models.DateTimeField('创建时间', editable=False)
+    create_time_str = models.CharField(max_length=32, editable=False)
 
     # UI字段
     start_date = models.DateField('开始日期', blank=True, null=True)
