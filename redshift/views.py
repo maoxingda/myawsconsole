@@ -10,7 +10,6 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 
-from common.session_utils import post_data_to_session
 from redshift.models import Snapshot, Table, RestoreTableTask, RestoreClusterTask, Cluster
 from redshift.util.corp_wechat import send_message
 
@@ -32,7 +31,6 @@ def refresh_clusters(request):
     return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist'))
 
 
-@post_data_to_session
 def refresh_snapshots(request):
     snapshots = []
     client = boto3.client('redshift')

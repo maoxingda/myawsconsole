@@ -64,5 +64,4 @@ class TaskAdmin(admin.ModelAdmin):
     list_display = ('name', 'html_actions', 'status', 'conn', )
     autocomplete_fields = ('conn', )
     # filter_horizontal = ('tables', )
-    readonly_fields = ('status', )
     view_on_site = False

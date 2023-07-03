@@ -22,12 +22,12 @@ class CommonAdmin(admin.ModelAdmin):
         extra_context['show_save_and_add_another'] = False
         return super().add_view(request, form_url, extra_context)
 
-    def get_changeform_initial_data(self, request):
-        initial = super().get_changeform_initial_data(request)
-        for key in request.session.keys():
-            if key.endswith(settings.SESSION_VAR_SUFFIX):
-                initial[f'{key[:-2]}'] = request.session.get(key)
-        return initial
+    # def get_changeform_initial_data(self, request):
+    #     initial = super().get_changeform_initial_data(request)
+    #     for key in request.session.keys():
+    #         if key.endswith(settings.SESSION_VAR_SUFFIX):
+    #             initial[f'{key[:-2]}'] = request.session.get(key)
+    #     return initial
 
     # TODO Django版本发生更新时，记得比对父类的实现是否有更新
     def _changeform_view(self, request, object_id, form_url, extra_context):

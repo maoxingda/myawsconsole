@@ -86,7 +86,7 @@ class Task(models.Model):
 
     name = models.CharField('名称', max_length=128)
     conn = models.ForeignKey(DbConn, verbose_name='数据库', on_delete=models.CASCADE, related_name='tasks')
-    status = models.CharField('状态', max_length=32, default=StatusEnum.CREATED.name)
+    status = models.CharField('状态', max_length=32, default=StatusEnum.CREATED.name, editable=False)
 
     def __str__(self):
         return self.name

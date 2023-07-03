@@ -7,11 +7,9 @@ from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 
-from common.session_utils import post_data_to_session
 from dms.models import Task, Endpoint, Table
 
 
-@post_data_to_session
 def refresh_tasks(request):
     tasks = []
     client = boto3.client('dms')
@@ -60,7 +58,6 @@ def refresh_tasks(request):
     return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist') + f'?q={endpoint_arn}{table_name}')
 
 
-@post_data_to_session
 def refresh_endpoints(request):
     endpoints = []
     client = boto3.client('dms')
