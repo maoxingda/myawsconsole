@@ -63,5 +63,8 @@ class TaskAdmin(admin.ModelAdmin):
     inlines = (TaskTableInlineAdmin, )
     list_display = ('name', 'html_actions', 'status', 'conn', )
     autocomplete_fields = ('conn', )
+    radio_fields = {
+        'task_type': admin.HORIZONTAL,
+    }
     # filter_horizontal = ('tables', )
     view_on_site = False

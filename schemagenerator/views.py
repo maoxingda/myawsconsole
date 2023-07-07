@@ -13,7 +13,7 @@ from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
-from schemagenerator.models import DbConn, Table, Task
+from schemagenerator.models import DbConn, Table, Task, TaskTypeEnum
 
 
 def db_tables(request, conn_id):
@@ -165,8 +165,10 @@ def launch_task(request, task_id):
                     'schema-name': schema_name,
                     'table-name': task_table.table.name
                 },
-                'rule-action': 'include',
-                'filters': [
+                'rule-action': 'include'
+            })
+            if task.task_type == TaskTypeEnum.SCHEMA.value:
+                table_mappings['rules'][-1]['filters'] = [
                     {
                         'filter-type': 'source',
                         'column-name': 'id',
@@ -177,7 +179,6 @@ def launch_task(request, task_id):
                         ]
                     }
                 ]
-            })
 
         if os.getlogin() == 'root':
             response = client.describe_endpoints(
@@ -256,7 +257,7 @@ def launch_task(request, task_id):
 
             print(f'task: {replication_task_id}, status: {status}, elapsed: {int(elapsed.seconds)} 秒')
 
-            if status == 'ready':
+            if status in ('ready', 'stopped'):
                 break
 
             time.sleep(10)

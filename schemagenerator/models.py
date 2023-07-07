@@ -6,6 +6,11 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 
+class TaskTypeEnum(models.TextChoices):
+    DATA = 'data', '表数据'
+    SCHEMA = 'schema', '表结构'
+
+
 class DbConn(models.Model):
     class Meta:
         verbose_name = '数据库连接'
@@ -49,7 +54,10 @@ class DbConn(models.Model):
         buttons.append(f'<a href="{url}?server_name={self.dns}">端点</a>')
 
         url = reverse(f'admin:{self._meta.app_label}_task_add')
-        buttons.append(f'<a href="{url}?conn={self.id}">添加任务</a>')
+        buttons.append(f'<a href="{url}?conn={self.id}&task_type={TaskTypeEnum.SCHEMA.value}">同步表结构</a>')
+
+        url = reverse(f'admin:{self._meta.app_label}_task_add')
+        buttons.append(f'<a href="{url}?conn={self.id}&task_type={TaskTypeEnum.DATA.value}">同步表数据</a>')
 
         return mark_safe(' / '.join(buttons))
 
@@ -87,6 +95,7 @@ class Task(models.Model):
     name = models.CharField('名称', max_length=128)
     conn = models.ForeignKey(DbConn, verbose_name='数据库', on_delete=models.CASCADE, related_name='tasks')
     status = models.CharField('状态', max_length=32, default=StatusEnum.CREATED.name, editable=False)
+    task_type = models.CharField('任务类型', max_length=32, choices=TaskTypeEnum.choices, default=TaskTypeEnum.SCHEMA.value)
 
     def __str__(self):
         return self.name
