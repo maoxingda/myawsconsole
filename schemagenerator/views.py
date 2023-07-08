@@ -5,8 +5,10 @@ import time
 from datetime import datetime
 
 import boto3
+import botocore.exceptions
 import mysql.connector
 import psycopg2
+from django.conf import settings
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, get_object_or_404
@@ -71,21 +73,47 @@ def db_tables(request, conn_id):
     return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist'))
 
 
+def update_table_mappings(request, task_id):
+    task = Task.objects.get(id=task_id)
+    client = boto3.client('dms')
+    endpoint_id = f'{task.conn.name.replace("_", "-")}-{settings.ENDPOINT_SUFFIX}'
+    replication_task_id = f'{endpoint_id}-to-redshift-onlyonce'
+    is_find = False
+    replication_task_arn = ''
+    try:
+        res = client.describe_replication_tasks(
+            Filters=[{'Name': 'replication-task-id', 'Values': [replication_task_id]}])
+        is_find = True
+        replication_task_arn = res['ReplicationTasks'][0]['ReplicationTaskArn']
+    except botocore.exceptions.ClientError:
+        pass
+
+    if is_find and replication_task_arn:
+        try:
+            client.modify_replication_task(ReplicationTaskArn=replication_task_arn,
+                                           TableMappings=json.dumps(task.table_mappins()))
+        except botocore.exceptions.ClientError:
+            pass
+
+    return redirect(task)
+
+
 def launch_task(request, task_id):
     task = Task.objects.get(id=task_id)
     task.status = Task.StatusEnum.RUNNING.name
     task.save()
     try:
         client = boto3.client('dms')
-        endpoint_id = f'{task.conn.name.replace("_", "-")}-sync-schema-source'
+        endpoint_id = f'{task.conn.name}-{task.name}-sync-{task.task_type}-{settings.ENDPOINT_SUFFIX}'.replace("_", "-")  # 不能包含下划线
+
         is_find = False
         source_endpoint_arn = ''
-        paginator = client.get_paginator('describe_endpoints')
-        for page in paginator.paginate(Filters=[{'Name': 'endpoint-type', 'Values': ['source']}]):
-            for endpoint in page['Endpoints']:
-                if endpoint_id == endpoint['EndpointIdentifier']:
-                    is_find = True
-                    source_endpoint_arn = endpoint['EndpointArn']
+        try:
+            res = client.describe_endpoints(Filters=[{'Name': 'endpoint-id', 'Values': [endpoint_id]}])
+            is_find = True
+            source_endpoint_arn = res['Endpoints'][0]['EndpointArn']
+        except botocore.exceptions.ClientError:
+            pass
         if not is_find:
             config = {
                 'EndpointIdentifier': endpoint_id,
@@ -103,16 +131,7 @@ def launch_task(request, task_id):
 
             start = datetime.now()
             while True:
-                response = client.describe_endpoints(
-                    Filters=[
-                        {
-                            'Name': 'endpoint-id',
-                            'Values': [
-                                endpoint_id
-                            ]
-                        }
-                    ]
-                )
+                response = client.describe_endpoints(Filters=[{'Name': 'endpoint-id', 'Values': [endpoint_id]}])
 
                 status = response['Endpoints'][0]['Status']
 
@@ -126,116 +145,26 @@ def launch_task(request, task_id):
 
                 time.sleep(15)
 
-        table_mappings = {
-            'rules': [
-                {
-                    'rule-type': 'transformation',
-                    'rule-id': 1,
-                    'rule-name': 1,
-                    'rule-target': 'table',
-                    'object-locator': {
-                        'schema-name': '%',
-                        'table-name': '%'
-                    },
-                    'rule-action': 'add-prefix',
-                    'value': task.conn.target_table_name_prefix,
-                    'old-value': None
-                },
-                {
-                    'rule-type': 'transformation',
-                    'rule-id': 2,
-                    'rule-name': 2,
-                    'rule-target': 'schema',
-                    'object-locator': {
-                        'schema-name': '%'
-                    },
-                    'rule-action': 'rename',
-                    'value': task.conn.target_schema,
-                    'old-value': None
-                }
-            ]
-        }
-        schema_name = task.conn.name if task.conn.db_type == DbConn.DbType.MYSQL.value else task.conn.schema
-        for i, task_table in enumerate(task.sync_tables.all()):
-            table_mappings['rules'].append({
-                'rule-id': 10001 + i,
-                'rule-name': 10001 + i,
-                'rule-type': 'selection',
-                'object-locator': {
-                    'schema-name': schema_name,
-                    'table-name': task_table.table.name
-                },
-                'rule-action': 'include'
-            })
-            if task.task_type == TaskTypeEnum.SCHEMA.value:
-                table_mappings['rules'][-1]['filters'] = [
-                    {
-                        'filter-type': 'source',
-                        'column-name': 'id',
-                        'filter-conditions': [
-                            {
-                                'filter-operator': 'null'
-                            }
-                        ]
-                    }
-                ]
-
         if os.getlogin() == 'root':
-            response = client.describe_endpoints(
-                Filters=[
-                    {
-                        'Name': 'endpoint-id',
-                        'Values': [
-                            'bi-sandbox-acceptanydate'
-                        ]
-                    }
-                ]
-            )
+            response = client.describe_endpoints(Filters=[{'Name': 'endpoint-id', 'Values': ['bi-sandbox-acceptanydate']}])
             target_endpoint_arn = response['Endpoints'][0]['EndpointArn']
-            response = client.describe_replication_instances(
-                Filters=[
-                    {
-                        'Name': 'replication-instance-id',
-                        'Values': [
-                            'bi-sandbox-private-replication-instance'
-                        ]
-                    }
-                ]
-            )
+            response = client.describe_replication_instances(Filters=[{'Name': 'replication-instance-id', 'Values': ['bi-sandbox-private-replication-instance']}])
             replication_instance_arn = response['ReplicationInstances'][0]['ReplicationInstanceArn']
         else:
-            response = client.describe_endpoints(
-                Filters=[
-                    {
-                        'Name': 'endpoint-id',
-                        'Values': [
-                            'bi-prod-hc'
-                        ]
-                    }
-                ]
-            )
+            response = client.describe_endpoints(Filters=[{'Name': 'endpoint-id', 'Values': ['bi-prod-hc']}])
             target_endpoint_arn = response['Endpoints'][0]['EndpointArn']
-            response = client.describe_replication_instances(
-                Filters=[
-                    {
-                        'Name': 'replication-instance-id',
-                        'Values': [
-                            'hc-replica-server-private'
-                        ]
-                    }
-                ]
-            )
+            response = client.describe_replication_instances(Filters=[{'Name': 'replication-instance-id', 'Values': ['hc-replica-server-private']}])
             replication_instance_arn = response['ReplicationInstances'][0]['ReplicationInstanceArn']
 
         is_find = False
         replication_task_arn = ''
-        replication_task_id = f'{endpoint_id}-to-redshift-onlyonce'
-        paginator = client.get_paginator('describe_replication_tasks')
-        for page in paginator.paginate(Filters=[{'Name': 'migration-type', 'Values': ['full-load']}]):
-            for replication_task in page['ReplicationTasks']:
-                if replication_task['ReplicationTaskIdentifier'] == replication_task_id:
-                    is_find = True
-                    replication_task_arn = replication_task['ReplicationTaskArn']
+        replication_task_id = f'{task.name.replace("_", "-")}-{settings.REPLICATION_TASK_SUFFIX}'
+        try:
+            res = client.describe_replication_tasks(Filters=[{'Name': 'replication-task-id', 'Values': [replication_task_id]}])
+            is_find = True
+            replication_task_arn = res['ReplicationTasks'][0]['ReplicationTaskArn']
+        except botocore.exceptions.ClientError:
+            pass
         if not is_find:
             response = client.create_replication_task(
                 ReplicationTaskIdentifier=replication_task_id,
@@ -243,7 +172,7 @@ def launch_task(request, task_id):
                 ReplicationInstanceArn=replication_instance_arn,
                 SourceEndpointArn=source_endpoint_arn,
                 TargetEndpointArn=target_endpoint_arn,
-                TableMappings=json.dumps(table_mappings),
+                TableMappings=json.dumps(task.table_mappins()),
             )
             replication_task_arn = response['ReplicationTask']['ReplicationTaskArn']
 
@@ -262,10 +191,10 @@ def launch_task(request, task_id):
 
             time.sleep(10)
 
-        client.start_replication_task(
-            ReplicationTaskArn=replication_task_arn,
-            StartReplicationTaskType='start-replication',
-        )
+        if status == 'ready':
+            client.start_replication_task(ReplicationTaskArn=replication_task_arn, StartReplicationTaskType='start-replication')
+        else:
+            client.start_replication_task(ReplicationTaskArn=replication_task_arn, StartReplicationTaskType='reload-target')
 
         start = datetime.now()
         while True:
@@ -284,11 +213,14 @@ def launch_task(request, task_id):
 
         task.status = Task.StatusEnum.COMPLETED.name
         task.save()
-    except:
+        code = 200
+    except botocore.exceptions.ClientError as error:
+        print(error)
         task.status = Task.StatusEnum.COMPLETED.CREATED.name
         task.save()
+        code = 500
 
-    return HttpResponse()
+    return JsonResponse({'code': code})
 
 
 def download_sql(request, task_id):

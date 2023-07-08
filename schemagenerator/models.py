@@ -1,3 +1,4 @@
+import json
 from enum import Enum
 
 from django.contrib import admin
@@ -103,6 +104,62 @@ class Task(models.Model):
     def get_absolute_url(self):
         return f'/{self._meta.app_label}/{self._meta.model_name}/{self.id}/change/'
 
+    def table_mappins(self):
+        table_mappings = {
+            'rules': [
+                {
+                    'rule-type': 'transformation',
+                    'rule-id': 1,
+                    'rule-name': 1,
+                    'rule-target': 'table',
+                    'object-locator': {
+                        'schema-name': '%',
+                        'table-name': '%'
+                    },
+                    'rule-action': 'add-prefix',
+                    'value': self.conn.target_table_name_prefix,
+                    'old-value': None
+                },
+                {
+                    'rule-type': 'transformation',
+                    'rule-id': 2,
+                    'rule-name': 2,
+                    'rule-target': 'schema',
+                    'object-locator': {
+                        'schema-name': '%'
+                    },
+                    'rule-action': 'rename',
+                    'value': self.conn.target_schema,
+                    'old-value': None
+                }
+            ]
+        }
+        schema_name = self.conn.name if self.conn.db_type == DbConn.DbType.MYSQL.value else self.conn.schema
+        for i, task_table in enumerate(self.sync_tables.all()):
+            table_mappings['rules'].append({
+                'rule-id': 10001 + i,
+                'rule-name': 10001 + i,
+                'rule-type': 'selection',
+                'object-locator': {
+                    'schema-name': schema_name,
+                    'table-name': task_table.table.name
+                },
+                'rule-action': 'include'
+            })
+            if self.task_type == TaskTypeEnum.SCHEMA.value:
+                table_mappings['rules'][-1]['filters'] = [
+                    {
+                        'filter-type': 'source',
+                        'column-name': 'id',
+                        'filter-conditions': [
+                            {
+                                'filter-operator': 'null'
+                            }
+                        ]
+                    }
+                ]
+        return table_mappings
+
     @admin.display(description='操作')
     def html_actions(self):
         buttons = []
@@ -111,6 +168,10 @@ class Task(models.Model):
         buttons.append(f'<a href="{url}?server_name={self.conn.dns}">端点</a>')
 
         return mark_safe(' / '.join(buttons))
+
+    @admin.display(description='表映射')
+    def fomart_table_mappings(self):
+        return mark_safe(f'<pre>{json.dumps(self.table_mappins(), indent=4)}</pre>')
 
 
 class TaskTable(models.Model):

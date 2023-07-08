@@ -2,6 +2,7 @@ import json
 import re
 
 import boto3
+from django.conf import settings
 from django.contrib import admin
 from django.urls import reverse
 from django.utils.safestring import mark_safe
@@ -20,7 +21,7 @@ class TaskAdmin(CommonAdmin):
     readonly_fields = ('format_table_mappings',)
     list_filter = ('table_name',)
 
-    sync_schema_task_pattern = re.compile(r'-sync-schema-source-to-redshift-onlyonce$')
+    sync_schema_task_pattern = re.compile(rf'-{settings.REPLICATION_TASK_SUFFIX}$')
 
     def has_change_permission(self, request, obj=None):
         return False
@@ -43,6 +44,7 @@ class TaskAdmin(CommonAdmin):
         if self.sync_schema_task_pattern.search(obj.name):
             url = reverse(f'admin:{obj._meta.app_label}_{obj._meta.model_name}_delete', args=(obj.id,))
             buttons.append(f'<a href="{url}">删除</a>')
+            buttons.append(f'🚒')
 
         return mark_safe(' / '.join(buttons))
 
@@ -93,7 +95,7 @@ class EndpointAdmin(CommonAdmin):
             f'<a href="{reverse("dms:refresh_tasks")}?endpoint_id={obj.id}">DMS任务</a>',
             f'<a href="{obj.url}">AWS控制台</a>',
         ]
-        sync_schema_source_pattern = re.compile(r'-sync-schema-source$')
+        sync_schema_source_pattern = re.compile(rf'-{settings.ENDPOINT_SUFFIX}$')
         if sync_schema_source_pattern.search(obj.identifier):
             buttons.append(f'🚒')
 

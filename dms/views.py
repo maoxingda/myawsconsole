@@ -2,6 +2,7 @@ import json
 import re
 
 import boto3
+import botocore.exceptions
 from django.conf import settings
 from django.http import JsonResponse
 from django.shortcuts import redirect
@@ -16,41 +17,44 @@ def refresh_tasks(request):
     table_name = request.POST.get('table_name', '')
     endpoint_id = request.GET.get('endpoint_id')
     endpoint_arn = ''
-    paginator = client.get_paginator('describe_replication_tasks')
-    for page in paginator.paginate():
-        for task in page['ReplicationTasks']:
-            if endpoint_id:
-                endpoint = Endpoint.objects.get(id=endpoint_id)
-                endpoint_arn = endpoint.arn
-                if endpoint.arn in (task['SourceEndpointArn'], task['TargetEndpointArn']):
-                    if not Task.objects.filter(name=task['ReplicationTaskIdentifier']).exists():
-                        tasks.append(Task(
-                            name=task['ReplicationTaskIdentifier'],
-                            arn=task['ReplicationTaskArn'],
-                            source_endpoint_arn=task['SourceEndpointArn'],
-                            url=f"{settings.AWS_DMS_URL}#taskDetails/{task['ReplicationTaskIdentifier']}",
-                            table_mappings=task['TableMappings']
-                        ))
-                continue
-
-            dts_paginator = client.get_paginator('describe_table_statistics')
-            for ts_page in dts_paginator.paginate(ReplicationTaskArn=task['ReplicationTaskArn']):
-                find = False
-                for stat in ts_page['TableStatistics']:
-                    if table_name in stat['TableName']:
-                        if not Task.objects.filter(name=task['ReplicationTaskIdentifier']).exists():
-                            tasks.append(Task(
-                                name=task['ReplicationTaskIdentifier'],
-                                arn=task['ReplicationTaskArn'],
-                                source_endpoint_arn=task['SourceEndpointArn'],
-                                url=f"{settings.AWS_DMS_URL}#taskDetails/{task['ReplicationTaskIdentifier']}",
-                                table_mappings=task['TableMappings'],
-                                table_name=table_name
-                            ))
-                        find = True
+    if endpoint_id:
+        endpoint = Endpoint.objects.get(id=endpoint_id)
+        endpoint_arn = endpoint.arn
+        try:
+            res = client.describe_replication_tasks(Filters=[{'Name': 'endpoint-arn', 'Values': [endpoint_arn]}])
+            for task in res['ReplicationTasks']:
+                if not Task.objects.filter(name=task['ReplicationTaskIdentifier']).exists():
+                    tasks.append(Task(
+                        name=task['ReplicationTaskIdentifier'],
+                        arn=task['ReplicationTaskArn'],
+                        source_endpoint_arn=task['SourceEndpointArn'],
+                        url=f"{settings.AWS_DMS_URL}#taskDetails/{task['ReplicationTaskIdentifier']}",
+                        table_mappings=task['TableMappings']
+                    ))
+        except botocore.exceptions.ClientError:
+            pass
+    else:
+        paginator = client.get_paginator('describe_replication_tasks')
+        for page in paginator.paginate():
+            for task in page['ReplicationTasks']:
+                dts_paginator = client.get_paginator('describe_table_statistics')
+                for ts_page in dts_paginator.paginate(ReplicationTaskArn=task['ReplicationTaskArn']):
+                    find = False
+                    for stat in ts_page['TableStatistics']:
+                        if table_name in stat['TableName']:
+                            if not Task.objects.filter(name=task['ReplicationTaskIdentifier']).exists():
+                                tasks.append(Task(
+                                    name=task['ReplicationTaskIdentifier'],
+                                    arn=task['ReplicationTaskArn'],
+                                    source_endpoint_arn=task['SourceEndpointArn'],
+                                    url=f"{settings.AWS_DMS_URL}#taskDetails/{task['ReplicationTaskIdentifier']}",
+                                    table_mappings=task['TableMappings'],
+                                    table_name=table_name
+                                ))
+                            find = True
+                            break
+                    if find:
                         break
-                if find:
-                    break
 
     if tasks:
         Task.objects.bulk_create(tasks)

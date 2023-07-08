@@ -8,7 +8,14 @@
 
 {% block object-tools-items %}
     <li>
-        <a id="id_launch" href="{% url 'schemagenerator:launch_task' object_id %}" onclick="return false;" {% if adminform.form.instance.status != 'CREATED' %}style="display: none;"{% endif %}>启动</a>
+        <a id="id_launch" href="{% url 'schemagenerator:launch_task' object_id %}" onclick="return false;"
+           {% if adminform.form.instance.status == 'RUNNING' %}style="display: none;"{% endif %}>
+            {% if adminform.form.instance.status == 'CREATED' %}
+                启动
+            {% elif adminform.form.instance.status == 'COMPLETED' %}
+                重新启动
+            {% endif %}
+        </a>
     </li>
     <li>
         <a id="id_running" href="#" onclick="return false;" style="{% if adminform.form.instance.status != 'RUNNING' %}display: none; {% endif %}background-color: #75f94c; color: red;">运行中...</a>
@@ -21,6 +28,9 @@
     </li>
     <li>
         <a id="id_download_emr_ddl_sql" onclick="return false;" href="{% url 'schemagenerator:create_ddl_sql' object_id %}?schema=emr" style="{% if adminform.form.instance.status != 'COMPLETED' %}display: none; {% endif %}background-color: #377d22;">EMR DDL</a>
+    </li>
+    <li>
+        <a id="id_update" href="{% url 'schemagenerator:update_table_mappings' object_id %}">更新表映射</a>
     </li>
     {{ block.super }}
 {% endblock %}

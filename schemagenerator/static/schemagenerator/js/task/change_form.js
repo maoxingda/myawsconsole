@@ -36,16 +36,24 @@
             }
         });
 
+        const btn_launch = django.jQuery('#id_launch');
         const btn_running = django.jQuery('#id_running');
-        const status = django.jQuery('#task_form > div > fieldset > div.form-row.field-status > div > div');
         django.jQuery('#id_launch').click(function () {
-            django.jQuery(this).toggle();
-            btn_running.toggle();
-            status.text('运行中...');
-            django.jQuery.get(django.jQuery(this).prop('href'), function () {
-                btn_running.text('已完成');
-                status.text('COMPLETED');
-                django.jQuery('#id_download_sql').toggle();
+            btn_launch.toggle();
+            if (btn_running.text() !== '失败') {
+                btn_running.toggle();
+            } else {
+                btn_running.text('运行中...');
+            }
+            django.jQuery.get(django.jQuery(this).prop('href'), function (data, _) {
+                if (data.code === 200) {
+                    btn_running.text('已完成');
+                    django.jQuery('#id_download_sql').toggle();
+                } else {
+                    btn_running.text('失败');
+                    btn_launch.text('重启');
+                    btn_launch.toggle();
+                }
             });
         });
 
