@@ -296,3 +296,10 @@ def create_ddl_sql(request, task_id):
         'schema': req_schema,
         'ddl_sql': ddl_sql
     })
+
+
+def update_status(request, task_id):
+    task = Task.objects.get(id=task_id)
+    task.status = Task.StatusEnum.COMPLETED.name
+    task.save()
+    return redirect(task)

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -18,7 +19,7 @@ class Task(models.Model):
     table_name = models.CharField('表名称', max_length=255)
 
     def __str__(self):
-        return self.name
+        return self.name.replace('-' + settings.REPLICATION_TASK_SUFFIX, '')
 
 
 class Table(models.Model):
@@ -53,4 +54,4 @@ class Endpoint(models.Model):
     server_name = models.CharField('数据库地址', max_length=255)
 
     def __str__(self):
-        return self.identifier
+        return self.identifier.replace('-' + settings.ENDPOINT_SUFFIX, '')

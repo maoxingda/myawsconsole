@@ -67,5 +67,20 @@ class TaskAdmin(admin.ModelAdmin):
     radio_fields = {
         'task_type': admin.HORIZONTAL,
     }
+    fieldsets = [
+        (
+            None,
+            {
+                'fields': ['name', 'conn', 'task_type'],
+            },
+        ),
+        (
+            '表映射',
+            {
+                'classes': ['collapse'],
+                'fields': ['fomart_table_mappings'],
+            },
+        ),
+    ]
     # filter_horizontal = ('tables', )
     view_on_site = False

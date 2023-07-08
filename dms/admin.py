@@ -16,8 +16,8 @@ from dms.views import refresh_endpoints, refresh_tasks
 class TaskAdmin(CommonAdmin):
     actions = ()
     search_fields = ('name', 'table_name', 'source_endpoint_arn',)
-    list_display = ('name', 'html_actions',)
-    list_display_links = ('name',)
+    list_display = ('__str__', 'html_actions',)
+    list_display_links = ('__str__',)
     readonly_fields = ('format_table_mappings',)
     list_filter = ('table_name',)
 
@@ -86,7 +86,7 @@ class TableAdmin(admin.ModelAdmin):
 @admin.register(Endpoint)
 class EndpointAdmin(CommonAdmin):
     search_fields = ('server_name',)
-    list_display = ('identifier', 'database', 'html_actions',)
+    list_display = ('__str__', 'database', 'html_actions',)
     fields = ('server_name',)
     actions = ()
 

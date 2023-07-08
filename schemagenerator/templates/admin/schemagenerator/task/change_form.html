@@ -30,6 +30,11 @@
         <a id="id_download_emr_ddl_sql" onclick="return false;" href="{% url 'schemagenerator:create_ddl_sql' object_id %}?schema=emr" style="{% if adminform.form.instance.status != 'COMPLETED' %}display: none; {% endif %}background-color: #377d22;">EMR DDL</a>
     </li>
     <li>
+        <a id="id_update_status"
+           href="{% url 'schemagenerator:update_status' object_id %}"
+           {% if adminform.form.instance.status != 'RUNNING' %}style="display: none;"{% endif %}>更新状态</a>
+    </li>
+    <li>
         <a id="id_update" href="{% url 'schemagenerator:update_table_mappings' object_id %}">更新表映射</a>
     </li>
     {{ block.super }}
