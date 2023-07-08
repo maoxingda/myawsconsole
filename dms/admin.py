@@ -74,6 +74,7 @@ class TableAdmin(admin.ModelAdmin):
     search_fields = ('name', 'task_name',)
     list_display = ('name', 'schema', 'task_name',)
     list_filter = ('task_name', 'schema',)
+    exclude = ('task',)
 
     def has_change_permission(self, request, obj=None):
         return False

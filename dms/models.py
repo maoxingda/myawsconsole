@@ -31,6 +31,7 @@ class Table(models.Model):
     name = models.CharField('名称', max_length=255)
     schema = models.CharField(max_length=32)
     task_name = models.CharField('任务名称', max_length=255, null=True)
+    task = models.ForeignKey(to=Task, on_delete=models.CASCADE, related_name='tables', verbose_name='任务', null=True)
 
     def __str__(self):
         return self.name

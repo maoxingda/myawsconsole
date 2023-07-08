@@ -64,12 +64,14 @@ def refresh_tasks(request):
 
 def refresh_endpoints(request):
     endpoints = []
+    remote_endpoint_identifiers = set()
     client = boto3.client('dms')
     server_name = request.POST.get('server_name', request.GET.get('server_name'))
     paginator = client.get_paginator('describe_endpoints')
-    for page in paginator.paginate():
+    for page in paginator.paginate(Filters=[{'Name': 'engine-name', 'Values': ['mysql', 'postgres']}]):
         for endpoint in page['Endpoints']:
             if server_name == endpoint.get('ServerName'):
+                remote_endpoint_identifiers.add(endpoint['EndpointIdentifier'])
                 if not Endpoint.objects.filter(identifier=endpoint['EndpointIdentifier']).exists():
                     endpoints.append(Endpoint(
                         identifier=endpoint['EndpointIdentifier'],
@@ -79,12 +81,13 @@ def refresh_endpoints(request):
                         server_name=server_name
                     ))
 
-    del_endpoints = []
-    for endpoint in Endpoint.objects.filter(identifier__endswith='-sync-schema-source'):
-        if not any([endpoint.identifier == ep.identifier for ep in endpoints]):
-            del_endpoints.append(endpoint)
-    for del_ep in del_endpoints:
-        del_ep.delete()
+    local_endpoint_identifiers = {
+        endpoint.identifier
+        for endpoint in Endpoint.objects.filter(identifier__endswith=f'-{settings.ENDPOINT_SUFFIX}')
+    }
+    del_endpoint_identifiers = local_endpoint_identifiers - remote_endpoint_identifiers
+    for endpoint_identifier in del_endpoint_identifiers:
+        Endpoint.objects.get(identifier=endpoint_identifier).delete()
 
     if endpoints:
         Endpoint.objects.bulk_create(endpoints)
@@ -103,7 +106,7 @@ def refresh_tables(request, task_id):
             tables.add((partition_table_name_suffix_pattern.sub('', stat['TableName']), stat['SchemaName']))
 
     tables = [
-        Table(name=table[0], schema=table[1], task_name=task.name) for table in tables
+        Table(name=table[0], schema=table[1], task_name=task.name, task=task) for table in tables
         if not Table.objects.filter(task_name=task.name, name=table[0]).exists()
     ]
 
