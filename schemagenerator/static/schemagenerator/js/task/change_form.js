@@ -5,6 +5,42 @@
         return '&db_conn_id=' + django.jQuery('#id_conn').val();
     }
 
+    function update_status(that, status) {
+        if (status === 'CREATED') {
+            that.launch_show = true;
+            that.launch_text = '启动';
+
+            that.running_show = false;
+            that.update_show = true;
+        } else if (status === 'RUNNING') {
+            that.launch_show = false;
+
+            that.running_show = true;
+            that.running_text = '运行中...';
+
+            that.update_show = false;
+            that.download_show = false;
+        } else if (status === 'COMPLETED') {
+            that.launch_show = true;
+            that.launch_text = '重启';
+
+            that.running_show = true;
+            that.running_text = '已完成';
+
+            that.download_show = true;
+            that.update_show = true;
+        } else {
+            that.launch_show = true;
+            that.launch_text = '重启';
+
+            that.running_show = true;
+            that.running_text = '失败';
+
+            that.download_show = false;
+            that.update_show = true;
+        }
+    }
+
     django.jQuery(function () {
         // 监听select打开、关闭事件，为自动完成ajax请求提供更多上下文信息
         const auto_complete = django.jQuery('select.admin-autocomplete');
@@ -62,46 +98,19 @@
             created() {
                 const that = this;
                 axios.get(location.pathname.split('/').slice(0, 4).join('/') + '/').then(function (res) {
-                    that.task = res.data;
-                    if (that.task.status === 'CREATED') {
-                        that.launch_show = true;
-                        that.launch_text = '启动';
-
-                        that.running_show = false;
-                    } else if (that.task.status === 'RUNNING') {
-                        that.running_show = true;
-                        that.running_text = '运行中...';
-
-                        that.update_show = false;
-                    } else if (that.task.status === 'COMPLETED') {
-                        that.launch_show = true;
-                        that.launch_text = '重启';
-
-                        that.running_show = true;
-                        that.running_text = '已完成';
-
-                        that.download_show = true;
-                    }
+                    update_status(that, res.data.status);
                 });
             },
             methods: {
                 launch_task(url) {
                     const that = this;
-                    that.launch_show = false;
-                    that.download_show = false;
-                    that.update_show = false;
-                    that.running_show = true;
-                    that.running_text = '运行中...';
+                    update_status(that, 'RUNNING');
                     axios.get(url).then(function (res) {
-                        const data = res.data;
-                        if (data.code === 200) {
-                            that.running_text = '已完成';
-                            that.download_show = true
+                        if (res.data.code === 200) {
+                            update_status(that, 'COMPLETED');
+                            that.launch_show = false;
                         } else {
-                            that.running_text = '失败';
-
-                            that.launch_show = true;
-                            that.launch_text = '重启';
+                            update_status(that, 'FAILED');
                         }
                     });
                 }
