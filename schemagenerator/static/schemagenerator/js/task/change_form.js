@@ -23,27 +23,6 @@
             }
         });
 
-        const btn_launch = django.jQuery('#id_launch');
-        const btn_running = django.jQuery('#id_running');
-        django.jQuery('#id_launch').click(function () {
-            btn_launch.toggle();
-            if (btn_running.text() !== '失败') {
-                btn_running.toggle();
-            } else {
-                btn_running.text('运行中...');
-            }
-            django.jQuery.get(django.jQuery(this).prop('href'), function (data, _) {
-                if (data.code === 200) {
-                    btn_running.text('已完成');
-                    django.jQuery('#id_download_sql').toggle();
-                } else {
-                    btn_running.text('失败');
-                    btn_launch.text('重启');
-                    btn_launch.toggle();
-                }
-            });
-        });
-
         django.jQuery('#id_download_sql').click(function () {
             django.jQuery.get(django.jQuery(this).prop('href'), {}, function (data, status) {
                 const now = dayjs().format('YYYY[_]MM[_]DD[T]HH[_]mm[_]ss');
@@ -67,5 +46,68 @@
                 downloadFile(filename, data.ddl_sql);
             });
         });
+
+        const app_data = {
+            data() {
+                return {
+                    launch_text: null,
+                    running_text: null,
+
+                    launch_show: null,
+                    running_show: null,
+                    download_show: null,
+                    update_show: null
+                }
+            },
+            created() {
+                const that = this;
+                axios.get(location.pathname.split('/').slice(0, 4).join('/') + '/').then(function (res) {
+                    that.task = res.data;
+                    if (that.task.status === 'CREATED') {
+                        that.launch_show = true;
+                        that.launch_text = '启动';
+
+                        that.running_show = false;
+                    } else if (that.task.status === 'RUNNING') {
+                        that.running_show = true;
+                        that.running_text = '运行中...';
+
+                        that.update_show = false;
+                    } else if (that.task.status === 'COMPLETED') {
+                        that.launch_show = true;
+                        that.launch_text = '重启';
+
+                        that.running_show = true;
+                        that.running_text = '已完成';
+
+                        that.download_show = true;
+                    }
+                });
+            },
+            methods: {
+                launch_task(url) {
+                    const that = this;
+                    that.launch_show = false;
+                    that.download_show = false;
+                    that.update_show = false;
+                    that.running_show = true;
+                    that.running_text = '运行中...';
+                    axios.get(url).then(function (res) {
+                        const data = res.data;
+                        if (data.code === 200) {
+                            that.running_text = '已完成';
+                            that.download_show = true
+                        } else {
+                            that.running_text = '失败';
+
+                            that.launch_show = true;
+                            that.launch_text = '重启';
+                        }
+                    });
+                }
+            }
+        }
+
+        Vue.createApp(app_data).mount('#content-main');
     });
 }

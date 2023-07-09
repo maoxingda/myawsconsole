@@ -10,12 +10,13 @@ import mysql.connector
 import psycopg2
 from django.conf import settings
 from django.contrib import messages
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
-from schemagenerator.models import DbConn, Table, Task, TaskTypeEnum
+from schemagenerator.models import DbConn, Table, Task
+from schemagenerator.serializers import TaskSerializer
 
 
 def db_tables(request, conn_id):
@@ -303,3 +304,11 @@ def update_status(request, task_id):
     task.status = Task.StatusEnum.COMPLETED.name
     task.save()
     return redirect(task)
+
+
+# @api_view
+def get_task(request, task_id):
+    task = get_object_or_404(Task, pk=task_id)
+    serializer = TaskSerializer(task)
+    return JsonResponse(serializer.data)
+    # return Response(serializer.data)

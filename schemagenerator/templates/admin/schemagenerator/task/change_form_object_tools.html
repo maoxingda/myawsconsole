@@ -2,36 +2,45 @@
 {% load static %}
 
 {% block object-tools-items %}
-    <li>
+    <li v-show="launch_show">
         <a id="id_launch"
-           href="{% url 'schemagenerator:launch_task' object_id %}"
+           href="#"
            onclick="return false;"
-           {% if adminform.form.instance.status == 'RUNNING' %}style="display: none;"{% endif %}>
-            {% if adminform.form.instance.status == 'CREATED' %}
-                启动
-            {% elif adminform.form.instance.status == 'COMPLETED' %}
-                重新启动
-            {% endif %}
+           @click="launch_task('{% url 'schemagenerator:launch_task' object_id %}')"
+           v-text="launch_text">
         </a>
     </li>
-    <li>
-        <a id="id_running" href="#" onclick="return false;" style="{% if adminform.form.instance.status != 'RUNNING' %}display: none; {% endif %}background-color: #75f94c; color: red;">运行中...</a>
+    <li v-show="running_show">
+        <a id="id_running"
+           href="#"
+           onclick="return false;"
+           style="background-color: #75f94c; color: red;"
+           v-text="running_text"
+        ></a>
     </li>
-    <li>
-        <a id="id_download_sql" href="{% url 'schemagenerator:download_sql' object_id %}" onclick="return false;" style="{% if adminform.form.instance.status != 'COMPLETED' %}display: none; {% endif %}background-color: #377d22;">下载查询SQL</a>
+    <li v-show="download_show">
+        <a id="id_download_sql"
+           onclick="return false;"
+           href="{% url 'schemagenerator:download_sql' object_id %}"
+           style="background-color: #377d22;">下载查询SQL</a>
     </li>
-    <li>
-        <a id="id_download_ods_ddl_sql" onclick="return false;" href="{% url 'schemagenerator:create_ddl_sql' object_id %}?schema=ods" style="{% if adminform.form.instance.status != 'COMPLETED' %}display: none; {% endif %}background-color: #377d22;">ODS DDL</a>
+    <li v-show="download_show">
+        <a id="id_download_ods_ddl_sql"
+           onclick="return false;"
+           href="{% url 'schemagenerator:create_ddl_sql' object_id %}?schema=ods"
+           style="background-color: #377d22;">ODS DDL</a>
     </li>
-    <li>
-        <a id="id_download_emr_ddl_sql" onclick="return false;" href="{% url 'schemagenerator:create_ddl_sql' object_id %}?schema=emr" style="{% if adminform.form.instance.status != 'COMPLETED' %}display: none; {% endif %}background-color: #377d22;">EMR DDL</a>
+    <li v-show="download_show">
+        <a id="id_download_emr_ddl_sql"
+           onclick="return false;"
+           href="{% url 'schemagenerator:create_ddl_sql' object_id %}?schema=emr"
+           style="background-color: #377d22;">EMR DDL</a>
     </li>
-    <li>
+    <li v-show="update_show">
         <a id="id_update_status"
-           href="{% url 'schemagenerator:update_status' object_id %}"
-           {% if adminform.form.instance.status != 'RUNNING' %}style="display: none;"{% endif %}>更新状态</a>
+           href="{% url 'schemagenerator:update_status' object_id %}">更新状态</a>
     </li>
-    <li>
+    <li v-show="update_show">
         <a id="id_update" href="{% url 'schemagenerator:update_table_mappings' object_id %}">更新表映射</a>
     </li>
     {{ block.super }}
