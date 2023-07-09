@@ -1,26 +1,22 @@
 'use strict'
 {
-    function downloadFile(filename, content) {
-        const element = document.createElement('a');
-        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content));
-        element.setAttribute('download', filename);
-
-        element.style.display = 'none';
-        document.body.appendChild(element);
-
-        element.click();
-
-        document.body.removeChild(element);
-    }
-
     django.jQuery(function () {
+        const btn_launch = django.jQuery('#id_launch');
         const btn_running = django.jQuery('#id_running');
         django.jQuery('#id_launch').click(function () {
-            django.jQuery(this).toggle();
-            btn_running.toggle();
-            django.jQuery.get(django.jQuery(this).prop('href'), function () {
+            btn_launch.toggle();
+            if (btn_running.text() !== '失败') {
+                btn_running.toggle();
+            } else {
+                btn_running.text('运行中...');
+            }
+            axios.get(btn_launch.prop('href')).then(function () {
                 btn_running.text('已完成...');
                 django.jQuery('#id_download_sql').toggle();
+            }, function () {
+                btn_launch.text('重启');
+                btn_launch.toggle();
+                btn_running.text('失败');
             });
         });
 

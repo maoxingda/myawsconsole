@@ -2,34 +2,24 @@
 {% load static %}
 
 {% block extrahead %}{{ block.super }}
-    <script src="{% static 'redshift/js/restoretabletask/change_form.js' %}"></script>
+    {# 第三方js #}
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.8/dayjs.min.js"></script>
-{% endblock %}
 
-{% block object-tools-items %}
-    <li>
-        <a id="id_launch" onclick="return false;"
-           href="{% url 'redshift:launch_restore_table_task' object_id %}">启动</a>
-    </li>
-    <li>
-        <a id="id_running" onclick="return false;" href="#"
-           style="background-color: #75f94c; color: red;">运行中...</a>
-    </li>
-    <li>
-        <a id="id_download_sql" onclick="return false;"
-           href="{% url 'redshift:download_sql' object_id %}"
-           style="background-color: #377d22;">下载查询SQL</a>
-    </li>
+    {# 自己写的js #}
+    <script src="{% static 'js/file.js' %}"></script>
+    <script src="{% static 'redshift/js/restoretabletask/change_form.js' %}"></script>
     <script>
-        {% if adminform.form.instance.status != 'CREATED' %}
-            django.jQuery('#id_launch').toggle();
-        {% endif %}
-        {% if adminform.form.instance.status != 'RUNNING' %}
-            django.jQuery('#id_running').toggle();
-        {% endif %}
-        {% if adminform.form.instance.status != 'COMPLETED' %}
-            django.jQuery('#id_download_sql').toggle();
-        {% endif %}
+        django.jQuery(function () {
+            {% if adminform.form.instance.status != 'CREATED' %}
+                django.jQuery('#id_launch').toggle();
+            {% endif %}
+            {% if adminform.form.instance.status != 'RUNNING' %}
+                django.jQuery('#id_running').toggle();
+            {% endif %}
+            {% if adminform.form.instance.status != 'COMPLETED' %}
+                django.jQuery('#id_download_sql').toggle();
+            {% endif %}
+        });
     </script>
-    {{ block.super }}
 {% endblock %}

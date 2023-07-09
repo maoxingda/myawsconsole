@@ -1,0 +1,14 @@
+{% extends 'admin/change_form_object_tools.html' %}
+{% load static %}
+
+{% block object-tools-items %}
+    <li>
+        <a id="id_launch" onclick="return false;"
+           href="{% url 'redshift:launch_restore_cluster_task' object_id %}">启动</a>
+    </li>
+    <li>
+        <a id="id_running" onclick="return false;" href="#"
+           style="background-color: #75f94c; color: red;">运行中...</a>
+    </li>
+    {{ block.super }}
+{% endblock %}

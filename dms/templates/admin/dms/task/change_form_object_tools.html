@@ -3,31 +3,9 @@
 
 {% block object-tools-items %}
     <li>
-        <a id="id_download_table_mappings" href="{% url 'dms:download_table_mapping' object_id %}" onclick="return false;">下载表映射</a>
+        <a id="id_download_table_mappings"
+           href="{% url 'dms:download_table_mapping' object_id %}"
+           onclick="return false;">下载表映射</a>
     </li>
     {{ block.super }}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.8/dayjs.min.js"></script>
-    <script>
-        console.log();
-        function downloadFile(filename, content) {
-            const element = document.createElement('a');
-            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content));
-            element.setAttribute('download', filename);
-
-            element.style.display = 'none';
-            document.body.appendChild(element);
-
-            element.click();
-
-            document.body.removeChild(element);
-        }
-
-        django.jQuery('#id_download_table_mappings').click(function () {
-            django.jQuery.get(django.jQuery(this).prop('href'), {}, function (data, status) {
-                const now = dayjs().format('YYYY[_]MM[_]DD[T]HH[_]mm[_]ss');
-                const filename = data.name + `-${now}.json`;
-                downloadFile(filename, JSON.parse(data.table_mappings));
-            });
-        });
-    </script>
 {% endblock %}

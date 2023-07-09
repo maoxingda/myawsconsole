@@ -4,9 +4,10 @@ import time
 from datetime import datetime, timedelta
 
 import boto3
+import botocore.exceptions
 import psycopg2
 from django.conf import settings
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, HttpResponseServerError
 from django.shortcuts import redirect
 from django.urls import reverse
 
@@ -64,6 +65,8 @@ def refresh_snapshots(request):
 
     if snapshots:
         Snapshot.objects.bulk_create(snapshots)
+
+    Snapshot.objects.filter(create_time__lte=datetime.utcnow() - timedelta(days=35)).delete()  # redshift集群快照最多能保留35天
 
     return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist'))
 
@@ -157,11 +160,12 @@ def launch_restore_table_task(request, task_id):
 
         task.status = RestoreTableTask.StatusEnum.COMPLETED.name
         task.save()
-    except:
+        return HttpResponse()
+    except botocore.exceptions.ClientError as error:
+        print(error)
         task.status = RestoreTableTask.StatusEnum.CREATED.name
         task.save()
-
-    return HttpResponse('恢复表任务成功')
+        return HttpResponseServerError()
 
 
 def launch_restore_cluster_task(request, task_id):
