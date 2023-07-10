@@ -18,9 +18,9 @@ def refresh_tasks(request):
     endpoint_id = request.GET.get('endpoint_id')
     endpoint_arn = ''
     if endpoint_id:
-        endpoint = Endpoint.objects.get(id=endpoint_id)
-        endpoint_arn = endpoint.arn
         try:
+            endpoint = Endpoint.objects.get(id=endpoint_id)
+            endpoint_arn = endpoint.arn
             res = client.describe_replication_tasks(Filters=[{'Name': 'endpoint-arn', 'Values': [endpoint_arn]}])
             for task in res['ReplicationTasks']:
                 if not Task.objects.filter(name=task['ReplicationTaskIdentifier']).exists():
@@ -31,8 +31,10 @@ def refresh_tasks(request):
                         url=f"{settings.AWS_DMS_URL}#taskDetails/{task['ReplicationTaskIdentifier']}",
                         table_mappings=task['TableMappings']
                     ))
-        except botocore.exceptions.ClientError:
-            pass
+        except Endpoint.DoesNotExist as error:
+            print(error)
+        except botocore.exceptions.ClientError as error:
+            print(error)
     else:
         paginator = client.get_paginator('describe_replication_tasks')
         for page in paginator.paginate():
