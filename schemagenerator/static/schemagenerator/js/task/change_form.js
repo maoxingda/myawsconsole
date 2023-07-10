@@ -59,30 +59,6 @@
             }
         });
 
-        django.jQuery('#id_download_sql').click(function () {
-            django.jQuery.get(django.jQuery(this).prop('href'), {}, function (data, status) {
-                const now = dayjs().format('YYYY[_]MM[_]DD[T]HH[_]mm[_]ss');
-                const filename = data.name + `-${now}.sql`;
-                downloadFile(filename, data.sql);
-            });
-        });
-
-        django.jQuery('#id_download_ods_ddl_sql').click(function () {
-            django.jQuery.get(django.jQuery(this).prop('href'), {}, function (data, status) {
-                const now = dayjs().format('YYYY[_]MM[_]DD[T]HH[_]mm[_]ss');
-                const filename = data.schema + `-${now}.sql`;
-                downloadFile(filename, data.ddl_sql);
-            });
-        });
-
-        django.jQuery('#id_download_emr_ddl_sql').click(function () {
-            django.jQuery.get(django.jQuery(this).prop('href'), {}, function (data, status) {
-                const now = dayjs().format('YYYY[_]MM[_]DD[T]HH[_]mm[_]ss');
-                const filename = data.schema + `-${now}.sql`;
-                downloadFile(filename, data.ddl_sql);
-            });
-        });
-
         const app_data = {
             data() {
                 return {
@@ -112,6 +88,30 @@
                         } else {
                             update_status(that, 'FAILED');
                         }
+                    });
+                },
+                download_sql(url) {
+                    axios.get(url).then(function (res) {
+                        const data = res.data;
+                        const now = dayjs().format('YYYY[_]MM[_]DD[T]HH[_]mm[_]ss');
+                        const filename = data.name + `-${now}.sql`;
+                        downloadFile(filename, data.sql);
+                    });
+                },
+                download_ods_ddl_sql(url) {
+                    axios.get(url).then(function (res) {
+                        const data = res.data;
+                        const now = dayjs().format('YYYY[_]MM[_]DD[T]HH[_]mm[_]ss');
+                        const filename = data.schema + `-${now}.sql`;
+                        downloadFile(filename, data.ddl_sql);
+                    });
+                },
+                download_emr_ddl_sql(url) {
+                    axios.get(url).then(function (res) {
+                        const data = res.data;
+                        const now = dayjs().format('YYYY[_]MM[_]DD[T]HH[_]mm[_]ss');
+                        const filename = data.schema + `-${now}.sql`;
+                        downloadFile(filename, data.ddl_sql);
                     });
                 }
             }

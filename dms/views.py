@@ -70,7 +70,7 @@ def refresh_endpoints(request):
     client = boto3.client('dms')
     server_name = request.POST.get('server_name', request.GET.get('server_name'))
     paginator = client.get_paginator('describe_endpoints')
-    for page in paginator.paginate(Filters=[{'Name': 'engine-name', 'Values': ['mysql', 'postgres']}]):
+    for page in paginator.paginate(Filters=[{'Name': 'engine-name', 'Values': ['mysql', 'postgres', 'aurora-postgresql']}]):
         for endpoint in page['Endpoints']:
             if server_name == endpoint.get('ServerName'):
                 remote_endpoint_identifiers.add(endpoint['EndpointIdentifier'])
