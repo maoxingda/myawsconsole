@@ -85,7 +85,7 @@ def refresh_endpoints(request):
 
     local_endpoint_identifiers = {
         endpoint.identifier
-        for endpoint in Endpoint.objects.filter(identifier__endswith=f'-{settings.ENDPOINT_SUFFIX}')
+        for endpoint in Endpoint.objects.filter(server_name=server_name)
     }
     del_endpoint_identifiers = local_endpoint_identifiers - remote_endpoint_identifiers
     for endpoint_identifier in del_endpoint_identifiers:
