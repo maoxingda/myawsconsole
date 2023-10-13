@@ -30,8 +30,8 @@ class DbConn(models.Model):
     password = models.CharField('密码', max_length=256)
     schema = models.CharField('源表Schema', max_length=128, default='public')
 
-    target_schema = models.CharField('目标表Schema', max_length=128, blank=True, default='temp', help_text='可选参数 默认为：temp')
-    target_table_name_prefix = models.CharField('目标表前缀', max_length=128, blank=True, help_text='可选参数 默认为：数据库 + _')
+    target_schema = models.CharField('目标表Schema', max_length=128, blank=True, default='temp')
+    target_table_name_prefix = models.CharField('目标表前缀', max_length=128, blank=True)
     s3_path = models.CharField('外部表Location', max_length=255, null=True, blank=True)
 
     def __str__(self):
@@ -61,11 +61,6 @@ class DbConn(models.Model):
         buttons.append(f'<a href="{url}?conn={self.id}&task_type={TaskTypeEnum.DATA.value}">同步表数据</a>')
 
         return mark_safe(' / '.join(buttons))
-
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
-        if not self.target_table_name_prefix:
-            self.target_table_name_prefix = f'{self.name}_'
-        super().save(force_insert, force_update, using, update_fields)
 
 
 class Table(models.Model):
