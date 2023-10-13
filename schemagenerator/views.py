@@ -34,11 +34,11 @@ def db_tables(request, conn_id):
 
                 tables = set()
                 for row in results:
-                    table_name = row[0]
+                    table_name = partition_table_name_suffix_pattern.sub('', row[0])
                     if not Table.objects.filter(conn=db_conn, name=table_name).exists():
                         if not Table.objects.filter(conn=db_conn, name=table_name).exists() and \
                                 not pg_prefix_pattern.search(table_name):
-                            tables.add(partition_table_name_suffix_pattern.sub('', table_name))
+                            tables.add(table_name)
 
                 if tables:
                     tables = [Table(name=table_name, conn=db_conn) for table_name in tables]
@@ -71,7 +71,7 @@ def db_tables(request, conn_id):
         cursor.close()
         conn.close()
 
-    return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist'))
+    return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist') + '?conn__id__exact=' + str(conn_id))
 
 
 def update_table_mappings(request, task_id):
