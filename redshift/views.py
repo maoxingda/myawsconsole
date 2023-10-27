@@ -85,7 +85,7 @@ def refresh_tables(request):
             for row in cursor.fetchall():
                 table_name = row[0]
                 schema = row[1]
-                if not suffix_filter.search(table_name) and not Table.objects.filter(name=table_name).exists():
+                if not Table.objects.filter(name=table_name).exists():
                     tables.append(Table(name=table_name, schema=schema))
 
     if tables:
