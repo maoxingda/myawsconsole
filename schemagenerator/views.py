@@ -77,8 +77,7 @@ def db_tables(request, conn_id):
 def update_table_mappings(request, task_id):
     task = Task.objects.get(id=task_id)
     client = boto3.client('dms')
-    endpoint_id = f'{task.conn.name.replace("_", "-")}-{settings.ENDPOINT_SUFFIX}'
-    replication_task_id = f'{endpoint_id}-to-redshift-onlyonce'
+    replication_task_id = task.dms_task_id
     is_find = False
     replication_task_arn = ''
     try:
@@ -154,7 +153,7 @@ def launch_task(request, task_id):
         else:
             response = client.describe_endpoints(Filters=[{'Name': 'endpoint-id', 'Values': ['bi-prod-hc']}])
             target_endpoint_arn = response['Endpoints'][0]['EndpointArn']
-            response = client.describe_replication_instances(Filters=[{'Name': 'replication-instance-id', 'Values': ['hc-replica-server-private']}])
+            response = client.describe_replication_instances(Filters=[{'Name': 'replication-instance-id', 'Values': ['hc-replica-server-private-v2']}])
             replication_instance_arn = response['ReplicationInstances'][0]['ReplicationInstanceArn']
 
         is_find = False
@@ -213,6 +212,7 @@ def launch_task(request, task_id):
             time.sleep(10)
 
         task.status = Task.StatusEnum.COMPLETED.name
+        task.dms_task_id = replication_task_id
         task.save()
         code = 200
     except botocore.exceptions.ClientError as error:
@@ -312,3 +312,16 @@ def get_task(request, task_id):
     serializer = TaskSerializer(task)
     return JsonResponse(serializer.data)
     # return Response(serializer.data)
+
+
+def enable_vue_js(request, task_id):
+    task = Task.objects.get(id=task_id)
+    task.enable_vue = not task.enable_vue
+    task.save()
+
+    if task.enable_vue:
+        messages.success(request, '成功启用Vue.js')
+    else:
+        messages.success(request, '成功禁用Vue.js')
+
+    return redirect(task)

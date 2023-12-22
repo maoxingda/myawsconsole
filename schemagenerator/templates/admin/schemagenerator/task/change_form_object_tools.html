@@ -32,6 +32,13 @@
     <li v-show="update_show">
         <a id="id_update" href="{% url 'schemagenerator:update_table_mappings' object_id %}">更新表映射</a>
     </li>
+    <li><a href="{% url 'schemagenerator:enable_vue_js' object_id %}">
+    {% if original.enable_vue %}
+        禁用VueJS
+    {% else %}
+        启用VueJS
+    {% endif %}
+    </a></li>
     {{ block.super }}
 {% endblock %}
 

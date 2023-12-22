@@ -12,7 +12,7 @@
 
         const table_name_prefix = django.jQuery('#id_target_table_name_prefix');
         django.jQuery('#id_name').on('keyup', function () {
-            table_name_prefix.val(`${django.jQuery(this).val()}_`);
+            table_name_prefix.val(`init_${django.jQuery(this).val()}_`);
         });
     });
 }
