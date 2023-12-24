@@ -22,12 +22,12 @@ class DbConn(models.Model):
         MYSQL = 'mysql', 'MySQL'
         POSTGRESQL = 'postgres', 'PostgreSQL'
 
-    name = models.CharField('数据库', max_length=128, unique=True)  # TODO MySQL从数据库地址截取 pg库必填
-    db_type = models.CharField('类型', max_length=16, choices=DbType.choices, default=DbType.POSTGRESQL.value)
-    dns = models.CharField('地址', max_length=256)
-    port = models.SmallIntegerField('端口号', default=5432)
     user = models.CharField('用户', max_length=256)
     password = models.CharField('密码', max_length=256)
+    dns = models.CharField('地址', max_length=256)
+    port = models.SmallIntegerField('端口号', default=5432)
+    name = models.CharField('数据库', max_length=128, unique=True)  # TODO MySQL从数据库地址截取 pg库必填
+    db_type = models.CharField('类型', max_length=16, choices=DbType.choices, default=DbType.POSTGRESQL.value)
     schema = models.CharField('源表Schema', max_length=128, default='public')
 
     target_schema = models.CharField('目标表Schema', max_length=128, blank=True, default='temp')
@@ -41,8 +41,12 @@ class DbConn(models.Model):
         return f'/admin/{self._meta.app_label}/{self._meta.model_name}/{self.id}/change/'
 
     def server_address(self):
-        return f'{DbConn.DbType.MYSQL.value if self.db_type == DbConn.DbType.MYSQL.value else DbConn.DbType.POSTGRESQL.value}://' \
-               f'{self.user}:{self.password}@{self.dns}:{self.port}/{self.name}'
+        protocol = (
+            DbConn.DbType.MYSQL.value
+            if self.db_type == DbConn.DbType.MYSQL.value
+            else DbConn.DbType.POSTGRESQL.value
+        )
+        return f'{protocol}://{self.user}:{self.password}@{self.dns}:{self.port}/{self.name}'
 
     @admin.display(description='操作')
     def html_actions(self):
@@ -79,18 +83,18 @@ class Table(models.Model):
 
 class Task(models.Model):
     class Meta:
-        verbose_name = '任务'
+        verbose_name        = '任务'
         verbose_name_plural = '任务'
-        ordering = ('name', )
+        ordering            = ('name', )
 
-    class StatusEnum(Enum):
-        CREATED = '已创建'
-        RUNNING = '运行中...'
-        COMPLETED = '已完成'
+    class StatusEnum(models.TextChoices):
+        CREATED   = 'created'  , '已创建'
+        RUNNING   = 'running'  , '运行中...'
+        COMPLETED = 'completed', '已完成'
 
     name = models.CharField('名称', max_length=128)
     conn = models.ForeignKey(DbConn, verbose_name='数据库', on_delete=models.CASCADE, related_name='tasks')
-    status = models.CharField('状态', max_length=32, default=StatusEnum.CREATED.name, editable=False)
+    status = models.CharField('状态', max_length=32, choices=StatusEnum.choices, default=StatusEnum.CREATED.value)
     task_type = models.CharField('任务类型', max_length=32, choices=TaskTypeEnum.choices, default=TaskTypeEnum.SCHEMA.value)
 
     dms_task_id = models.CharField(max_length=255, null=True, editable=False)
@@ -165,7 +169,30 @@ class Task(models.Model):
         url = reverse('dms:refresh_endpoints')
         buttons.append(f'<a href="{url}?server_name={self.conn.dns}">端点</a>')
 
-        return mark_safe(' / '.join(buttons))
+        if self.status != Task.StatusEnum.RUNNING.value:
+            url = reverse('schemagenerator:launch_task', args=(self.id, ))
+            text = (
+                '启动'
+                if self.status == Task.StatusEnum.CREATED.value
+                else '重启'
+            )
+            buttons.append(f'<a href="{url}">{text}</a>')
+
+        if self.status == Task.StatusEnum.COMPLETED.value:
+            url = reverse('schemagenerator:download_sql', args=(self.id, ))
+            buttons.append(f'<a id="id_download_sql" href="{url}">下载SQL</a>')
+
+            url = reverse('schemagenerator:create_ddl_sql', args=(self.id, ))
+            buttons.append(f'<a id="id_download_emr_ddl_sql" href="{url}">下载DDL</a>')
+
+            url = reverse('schemagenerator:update_table_mappings', args=(self.id, ))
+            buttons.append(f'<a href="{url}">更新表映射</a>')
+
+        if self.status == Task.StatusEnum.RUNNING.value:
+            url = reverse('schemagenerator:update_status', args=(self.id, ))
+            buttons.append(f'<a href="{url}">更新状态</a>')
+
+        return mark_safe('&emsp;'.join(buttons))
 
     @admin.display(description='表映射')
     def fomart_table_mappings(self):

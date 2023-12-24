@@ -5,42 +5,6 @@
         return '&db_conn_id=' + django.jQuery('#id_conn').val();
     }
 
-    function update_status(that, status) {
-        if (status === 'CREATED') {
-            that.launch_show = true;
-            that.launch_text = '启动';
-
-            that.running_show = false;
-            that.update_show = true;
-        } else if (status === 'RUNNING') {
-            that.launch_show = false;
-
-            that.running_show = true;
-            that.running_text = '运行中...';
-
-            that.update_show = false;
-            that.download_show = false;
-        } else if (status === 'COMPLETED') {
-            that.launch_show = true;
-            that.launch_text = '重启';
-
-            that.running_show = true;
-            that.running_text = '已完成';
-
-            that.download_show = true;
-            that.update_show = true;
-        } else {
-            that.launch_show = true;
-            that.launch_text = '重启';
-
-            that.running_show = true;
-            that.running_text = '失败';
-
-            that.download_show = false;
-            that.update_show = true;
-        }
-    }
-
     django.jQuery(function () {
         // 监听select打开、关闭事件，为自动完成ajax请求提供更多上下文信息
         const auto_complete = django.jQuery('select.admin-autocomplete');
@@ -59,64 +23,31 @@
             }
         });
 
-        const app_data = {
-            data() {
-                return {
-                    launch_text: null,
-                    running_text: null,
+        const id_download_sql         = django.jQuery('#id_download_sql');
+        const id_download_emr_ddl_sql = django.jQuery('#id_download_emr_ddl_sql');
 
-                    launch_show: null,
-                    running_show: null,
-                    download_show: null,
-                    update_show: null
-                }
-            },
-            created() {
-                const that = this;
-                axios.get(location.pathname.split('/').slice(0, 4).join('/') + '/').then(function (res) {
-                    update_status(that, res.data.status);
-                });
-            },
-            methods: {
-                launch_task(url) {
-                    const that = this;
-                    update_status(that, 'RUNNING');
-                    axios.get(url).then(function (res) {
-                        if (res.data.code === 200) {
-                            update_status(that, 'COMPLETED');
-                            that.launch_show = false;
-                        } else {
-                            update_status(that, 'FAILED');
-                        }
-                    });
-                },
-                download_sql(url) {
-                    axios.get(url).then(function (res) {
-                        const data = res.data;
-                        const now = dayjs().format('YYYY[_]MM[_]DD[T]HH[_]mm[_]ss');
-                        const filename = data.name + `-${now}.sql`;
-                        downloadFile(filename, data.sql);
-                    });
-                },
-                download_ods_ddl_sql(url) {
-                    axios.get(url).then(function (res) {
-                        const data = res.data;
-                        const now = dayjs().format('YYYY[_]MM[_]DD[T]HH[_]mm[_]ss');
-                        const filename = data.schema + `-${now}.sql`;
-                        downloadFile(filename, data.ddl_sql);
-                    });
-                },
-                download_emr_ddl_sql(url) {
-                    axios.get(url).then(function (res) {
-                        const data = res.data;
-                        const now = dayjs().format('YYYY[_]MM[_]DD[T]HH[_]mm[_]ss');
-                        const filename = data.schema + `-${now}.sql`;
-                        downloadFile(filename, data.ddl_sql);
-                    });
-                }
-            }
-        }
+        const date_format = 'YYYY[_]MM[_]DD[T]HH[_]mm[_]ss';
 
-        Vue.createApp(app_data).mount('#content-main');
+        // 下载查询SQL
+        id_download_sql.click(function (e) {
+            e.preventDefault();
+            axios.get(this.href).then(function (res) {
+                const data = res.data;
+                const now = dayjs().format(date_format);
+                const filename = data.name + `-${now}.sql`;
+                downloadFile(filename, data.sql);
+            });
+        });
+
+        // 下载emr建表DDL
+        id_download_emr_ddl_sql.click(function (e) {
+            e.preventDefault();
+            axios.get(this.href).then(function (res) {
+                const data = res.data;
+                const now = dayjs().format(date_format);
+                const filename = `ddl-${now}.sql`;
+                downloadFile(filename, data.ddl_sql);
+            });
+        });
     });
 }

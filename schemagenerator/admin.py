@@ -1,3 +1,4 @@
+import os
 import urllib
 
 from django.contrib import admin
@@ -35,6 +36,14 @@ class DbConnAdmin(admin.ModelAdmin):
     }
     view_on_site = False
 
+    def save_model(self, request, obj: DbConn, form, change):
+        if os.getlogin() == 'root':
+            obj.s3_path = f's3://bi-data-store/realtime-cdc/{obj.name}/{obj.schema}/'
+        else:
+            obj.s3_path = f's3://bi-data-lake/realtime-cdc/{obj.name}/{obj.schema}/'
+
+        super().save_model(request, obj, form, change)
+
 
 @admin.register(Table)
 class TableAdmin(AjaxModelAdmin):
@@ -61,9 +70,9 @@ class TaskTableInlineAdmin(admin.TabularInline):
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
     inlines = (TaskTableInlineAdmin, )
-    list_display = ('name', 'html_actions', 'status', 'conn', )
+    list_display = ('name', 'status', 'conn', )
     autocomplete_fields = ('conn', )
-    readonly_fields = ('fomart_table_mappings', )
+    readonly_fields = ('fomart_table_mappings', 'status', 'html_actions', )
     radio_fields = {
         'task_type': admin.HORIZONTAL,
     }
@@ -71,7 +80,7 @@ class TaskAdmin(admin.ModelAdmin):
         (
             None,
             {
-                'fields': ['name', 'conn', 'task_type'],
+                'fields': ['name', 'conn', 'task_type', 'status', 'html_actions'],
             },
         ),
         (

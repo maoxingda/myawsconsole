@@ -78,7 +78,7 @@ def refresh_endpoints(request):
                     endpoints.append(Endpoint(
                         identifier=endpoint['EndpointIdentifier'],
                         arn=endpoint['EndpointArn'],
-                        database=endpoint['DatabaseName'] if endpoint.get('DatabaseName') else None,
+                        database=endpoint.get('DatabaseName'),
                         url=f'{settings.AWS_DMS_URL}#endpointDetails/{endpoint["EndpointIdentifier"]}',
                         server_name=server_name
                     ))
@@ -88,11 +88,9 @@ def refresh_endpoints(request):
         for endpoint in Endpoint.objects.filter(server_name=server_name)
     }
     del_endpoint_identifiers = local_endpoint_identifiers - remote_endpoint_identifiers
-    for endpoint_identifier in del_endpoint_identifiers:
-        Endpoint.objects.get(identifier=endpoint_identifier).delete()
+    Endpoint.objects.filter(identifier__in=del_endpoint_identifiers).delete()
 
-    if endpoints:
-        Endpoint.objects.bulk_create(endpoints)
+    Endpoint.objects.bulk_create(endpoints)
 
     return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist') + f'?q={server_name}')
 

@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import threading
 import time
 from datetime import datetime
 
@@ -14,6 +15,7 @@ from django.http import JsonResponse
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+from psycopg2 import extras
 
 from schemagenerator.models import DbConn, Table, Task
 from schemagenerator.serializers import TaskSerializer
@@ -21,52 +23,49 @@ from schemagenerator.serializers import TaskSerializer
 
 def db_tables(request, conn_id):
     db_conn = DbConn.objects.get(id=conn_id)
+
     partition_table_name_suffix_pattern = re.compile(r'_\d+\w*$')
     pg_prefix_pattern = re.compile(r'^pg_')
+
     if db_conn.db_type == DbConn.DbType.POSTGRESQL.value:
         with psycopg2.connect(db_conn.server_address()) as conn:
-            with conn.cursor() as cursor:
-                query = f"select table_name from information_schema.tables where table_type = 'BASE TABLE'"
-                query = f"select tablename from pg_catalog.pg_tables"
-                cursor.execute(query)
-
-                results = cursor.fetchall()
+            with conn.cursor(cursor_factory=extras.DictCursor) as cursor:
+                cursor.execute(f"select tablename from pg_catalog.pg_tables")
 
                 tables = set()
-                for row in results:
-                    table_name = partition_table_name_suffix_pattern.sub('', row[0])
-                    if not Table.objects.filter(conn=db_conn, name=table_name).exists():
-                        if not Table.objects.filter(conn=db_conn, name=table_name).exists() and \
-                                not pg_prefix_pattern.search(table_name):
-                            tables.add(table_name)
+                for row in cursor.fetchall():
+                    table_name = partition_table_name_suffix_pattern.sub('', row['tablename'])
+                    if pg_prefix_pattern.search(table_name):
+                        continue
+                    if Table.objects.filter(conn=db_conn, name=table_name).exists():
+                        continue
+                    tables.add(table_name)
 
-                if tables:
-                    tables = [Table(name=table_name, conn=db_conn) for table_name in tables]
-                    Table.objects.bulk_create(tables)
+                Table.objects.bulk_create(Table(name=table_name, conn=db_conn) for table_name in tables)
+
     elif db_conn.db_type == DbConn.DbType.MYSQL.value:
         config = {
-            'user': db_conn.user,
+            'user'    : db_conn.user,
             'password': db_conn.password,
-            'host': db_conn.dns,
-            'port': db_conn.port,
+            'host'    : db_conn.dns,
+            'port'    : db_conn.port,
             'database': db_conn.name,
         }
         conn = mysql.connector.connect(**config)
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
 
-        query = f"select table_name from information_schema.tables where table_schema = '{db_conn.name}' and table_type = 'BASE TABLE'"
+        query = f"select table_name from information_schema.tables " \
+                f"where table_schema = '{db_conn.name}' and table_type = 'BASE TABLE'"
         cursor.execute(query)
 
-        results = cursor.fetchall()
-
         tables = []
-        for row in results:
-            table_name = row[0]
-            if not Table.objects.filter(conn=db_conn, name=table_name).exists():
-                tables.append(Table(name=table_name, conn=db_conn))
+        for row in cursor.fetchall():
+            table_name = row['TABLE_NAME']
+            if Table.objects.filter(conn=db_conn, name=table_name).exists():
+                continue
+            tables.append(Table(name=table_name, conn=db_conn))
 
-        if tables:
-            Table.objects.bulk_create(tables)
+        Table.objects.bulk_create(tables)
 
         cursor.close()
         conn.close()
@@ -100,128 +99,126 @@ def update_table_mappings(request, task_id):
 
 def launch_task(request, task_id):
     task = Task.objects.get(id=task_id)
-    task.status = Task.StatusEnum.RUNNING.name
+    task.status = Task.StatusEnum.RUNNING.value
     task.save()
-    try:
-        client = boto3.client('dms')
-        endpoint_id = f'{task.conn.name}-{task.name}-sync-{task.task_type}-{settings.ENDPOINT_SUFFIX}'.replace("_", "-")  # 不能包含下划线
 
-        is_find = False
-        source_endpoint_arn = ''
+    def do_task():
         try:
-            res = client.describe_endpoints(Filters=[{'Name': 'endpoint-id', 'Values': [endpoint_id]}])
-            is_find = True
-            source_endpoint_arn = res['Endpoints'][0]['EndpointArn']
-        except botocore.exceptions.ClientError:
-            pass
-        if not is_find:
-            config = {
-                'EndpointIdentifier': endpoint_id,
-                'EndpointType': 'source',
-                'EngineName': task.conn.db_type,
-                'Username': task.conn.user,
-                'Password': task.conn.password,
-                'Port': task.conn.port,
-                'ServerName': task.conn.dns,
-                'SslMode': 'none',
-            }
-            if task.conn.db_type == DbConn.DbType.POSTGRESQL.value:
-                config['DatabaseName'] = task.conn.name
-            client.create_endpoint(**config)
+            client = boto3.client('dms')
+            endpoint_id = f'{task.conn.name}-{task.name}-sync-{task.task_type}-{settings.ENDPOINT_SUFFIX}'.replace("_", "-")  # 不能包含下划线
+
+            try:
+                response = client.describe_endpoints(Filters=[{'Name': 'endpoint-id', 'Values': [endpoint_id]}])
+                source_endpoint_arn = response['Endpoints'][0]['EndpointArn']
+            except client.exceptions.ResourceNotFoundFault:
+                source_endpoint_arn = ''
+
+            if not source_endpoint_arn:
+                config = {
+                    'EndpointIdentifier': endpoint_id,
+                    'EndpointType': 'source',
+                    'EngineName': task.conn.db_type,
+                    'Username': task.conn.user,
+                    'Password': task.conn.password,
+                    'Port': task.conn.port,
+                    'ServerName': task.conn.dns,
+                    'SslMode': 'none',
+                }
+                if task.conn.db_type == DbConn.DbType.POSTGRESQL.value:
+                    config['DatabaseName'] = task.conn.name
+                client.create_endpoint(**config)
+
+                start = datetime.now()
+                while True:
+                    response = client.describe_endpoints(Filters=[{'Name': 'endpoint-id', 'Values': [endpoint_id]}])
+
+                    status = response['Endpoints'][0]['Status']
+
+                    elapsed = datetime.now() - start
+
+                    print(f'endpoint: {endpoint_id}, status: {status}, elapsed: {int(elapsed.seconds)} 秒')
+
+                    if status == 'active':
+                        source_endpoint_arn = response['Endpoints'][0]['EndpointArn']
+                        break
+
+                    time.sleep(15)
+
+            if os.getlogin() == 'root':
+                response = client.describe_endpoints(Filters=[{'Name': 'endpoint-id', 'Values': ['bi-sandbox-acceptanydate']}])
+                target_endpoint_arn = response['Endpoints'][0]['EndpointArn']
+                response = client.describe_replication_instances(Filters=[{'Name': 'replication-instance-id', 'Values': ['bi-sandbox-private-replication-instance']}])
+                replication_instance_arn = response['ReplicationInstances'][0]['ReplicationInstanceArn']
+            else:
+                response = client.describe_endpoints(Filters=[{'Name': 'endpoint-id', 'Values': ['bi-prod-hc']}])
+                target_endpoint_arn = response['Endpoints'][0]['EndpointArn']
+                response = client.describe_replication_instances(Filters=[{'Name': 'replication-instance-id', 'Values': ['hc-replica-server-private-v2']}])
+                replication_instance_arn = response['ReplicationInstances'][0]['ReplicationInstanceArn']
+
+            replication_task_id = f'{task.name.replace("_", "-")}-{settings.REPLICATION_TASK_SUFFIX}'
+            try:
+                response = client.describe_replication_tasks(Filters=[{'Name': 'replication-task-id', 'Values': [replication_task_id]}])
+                replication_task_arn = response['ReplicationTasks'][0]['ReplicationTaskArn']
+            except client.exceptions.ResourceNotFoundFault:
+                replication_task_arn = ''
+
+            if not replication_task_arn:
+                response = client.create_replication_task(
+                    ReplicationTaskIdentifier=replication_task_id,
+                    MigrationType='full-load',
+                    ReplicationInstanceArn=replication_instance_arn,
+                    SourceEndpointArn=source_endpoint_arn,
+                    TargetEndpointArn=target_endpoint_arn,
+                    TableMappings=json.dumps(task.table_mappins()),
+                )
+                replication_task_arn = response['ReplicationTask']['ReplicationTaskArn']
 
             start = datetime.now()
             while True:
-                response = client.describe_endpoints(Filters=[{'Name': 'endpoint-id', 'Values': [endpoint_id]}])
+                response = client.describe_replication_tasks(Filters=[{'Name': 'replication-task-id', 'Values': [replication_task_id]}])
 
-                status = response['Endpoints'][0]['Status']
+                status = response['ReplicationTasks'][0]['Status']
 
                 elapsed = datetime.now() - start
 
-                print(f'endpoint: {endpoint_id}, status: {status}, elapsed: {int(elapsed.seconds)} 秒')
+                print(f'task: {task.name}, status: {status}, elapsed: {int(elapsed.seconds)} 秒')
 
-                if status == 'active':
-                    source_endpoint_arn = response['Endpoints'][0]['EndpointArn']
+                if status in ('ready', 'stopped'):
                     break
 
-                time.sleep(15)
+                time.sleep(10)
 
-        if os.getlogin() == 'root':
-            response = client.describe_endpoints(Filters=[{'Name': 'endpoint-id', 'Values': ['bi-sandbox-acceptanydate']}])
-            target_endpoint_arn = response['Endpoints'][0]['EndpointArn']
-            response = client.describe_replication_instances(Filters=[{'Name': 'replication-instance-id', 'Values': ['bi-sandbox-private-replication-instance']}])
-            replication_instance_arn = response['ReplicationInstances'][0]['ReplicationInstanceArn']
-        else:
-            response = client.describe_endpoints(Filters=[{'Name': 'endpoint-id', 'Values': ['bi-prod-hc']}])
-            target_endpoint_arn = response['Endpoints'][0]['EndpointArn']
-            response = client.describe_replication_instances(Filters=[{'Name': 'replication-instance-id', 'Values': ['hc-replica-server-private-v2']}])
-            replication_instance_arn = response['ReplicationInstances'][0]['ReplicationInstanceArn']
+            if status == 'ready':
+                client.start_replication_task(ReplicationTaskArn=replication_task_arn, StartReplicationTaskType='start-replication')
+            else:
+                client.start_replication_task(ReplicationTaskArn=replication_task_arn, StartReplicationTaskType='reload-target')
 
-        is_find = False
-        replication_task_arn = ''
-        replication_task_id = f'{task.name.replace("_", "-")}-{settings.REPLICATION_TASK_SUFFIX}'
-        try:
-            res = client.describe_replication_tasks(Filters=[{'Name': 'replication-task-id', 'Values': [replication_task_id]}])
-            is_find = True
-            replication_task_arn = res['ReplicationTasks'][0]['ReplicationTaskArn']
-        except botocore.exceptions.ClientError:
-            pass
-        if not is_find:
-            response = client.create_replication_task(
-                ReplicationTaskIdentifier=replication_task_id,
-                MigrationType='full-load',
-                ReplicationInstanceArn=replication_instance_arn,
-                SourceEndpointArn=source_endpoint_arn,
-                TargetEndpointArn=target_endpoint_arn,
-                TableMappings=json.dumps(task.table_mappins()),
-            )
-            replication_task_arn = response['ReplicationTask']['ReplicationTaskArn']
+            start = datetime.now()
+            while True:
+                response = client.describe_replication_tasks(Filters=[{'Name': 'replication-task-id', 'Values': [replication_task_id]}])
 
-        start = datetime.now()
-        while True:
-            response = client.describe_replication_tasks(Filters=[{'Name': 'replication-task-id', 'Values': [replication_task_id]}])
+                status = response['ReplicationTasks'][0]['Status']
 
-            status = response['ReplicationTasks'][0]['Status']
+                elapsed = datetime.now() - start
 
-            elapsed = datetime.now() - start
+                print(f'task: {task.name}, status: {status}, elapsed: {int(elapsed.seconds)} 秒')
 
-            print(f'task: {replication_task_id}, status: {status}, elapsed: {int(elapsed.seconds)} 秒')
+                if status == 'stopped':
+                    break
 
-            if status in ('ready', 'stopped'):
-                break
+                time.sleep(10)
 
-            time.sleep(10)
+            task.status = Task.StatusEnum.COMPLETED.value
+            task.dms_task_id = replication_task_id
+        except Exception as error:
+            task.status = Task.StatusEnum.COMPLETED.CREATED.value
+            raise error
+        finally:
+            task.save()
 
-        if status == 'ready':
-            client.start_replication_task(ReplicationTaskArn=replication_task_arn, StartReplicationTaskType='start-replication')
-        else:
-            client.start_replication_task(ReplicationTaskArn=replication_task_arn, StartReplicationTaskType='reload-target')
+    threading.Thread(target=do_task).start()
 
-        start = datetime.now()
-        while True:
-            response = client.describe_replication_tasks(Filters=[{'Name': 'replication-task-id', 'Values': [replication_task_id]}])
-
-            status = response['ReplicationTasks'][0]['Status']
-
-            elapsed = datetime.now() - start
-
-            print(f'task: {replication_task_id}, status: {status}, elapsed: {int(elapsed.seconds)} 秒')
-
-            if status == 'stopped':
-                break
-
-            time.sleep(10)
-
-        task.status = Task.StatusEnum.COMPLETED.name
-        task.dms_task_id = replication_task_id
-        task.save()
-        code = 200
-    except botocore.exceptions.ClientError as error:
-        print(error)
-        task.status = Task.StatusEnum.COMPLETED.CREATED.name
-        task.save()
-        code = 500
-
-    return JsonResponse({'code': code})
+    return redirect(task)
 
 
 def download_sql(request, task_id):
@@ -234,7 +231,6 @@ def download_sql(request, task_id):
 
 
 def create_ddl_sql(request, task_id):
-    req_schema = request.GET.get('schema')
     task = get_object_or_404(Task, id=task_id)
     dns = os.getenv('dns')
     with psycopg2.connect(dns) as conn:
@@ -250,16 +246,7 @@ def create_ddl_sql(request, task_id):
                 max_column_lengh = max([len(column) + 2 for column, *rest in columns] + [1])
                 max_column_lengh = 25 if max_column_lengh < 25 else max_column_lengh
 
-                external = ''
-                if_not_exists = ''
-                if req_schema == 'emr':
-                    external = 'external '
-                else:
-                    if_not_exists = 'if not exists '
-
-                # ddl_sql += f'drop table if exists {req_schema}.{"db_" if req_schema == "ods" else ""}{table_name_prefix}_{table.name};\n'
-
-                ddl_sql += f'create {external}table {if_not_exists}{req_schema}.{"db_" if req_schema == "ods" else ""}{task.conn.target_table_name_prefix}{sync_table.table.name}\n' \
+                ddl_sql += f'create external table emr.{task.conn.target_table_name_prefix.replace("init_", "")}{sync_table.table.name}\n' \
                            f'(\n'
                 for column, data_type, column_lengh, numeric_precision, numeric_scale in columns:
                     column = f'"{column}"'
@@ -280,28 +267,21 @@ def create_ddl_sql(request, task_id):
                 ddl_sql += f"    {'commit_timestamp'.ljust(max_column_lengh)} varchar(50),\n"
                 ddl_sql += f"    {'op'.ljust(max_column_lengh)} char(1),\n"
                 ddl_sql += f"    {'cdc_transact_id'.ljust(max_column_lengh)} varchar(50),\n"
-                if req_schema == 'ods':
-                    ddl_sql += f"    {'event_time'.ljust(max_column_lengh)} varchar(128),\n"
-                    ddl_sql += f"    {'timestamp_executed_insert'.ljust(max_column_lengh)} timestamp default sysdate + interval '8h',\n"
-                    ddl_sql += f"    {'timestamp_executed_update'.ljust(max_column_lengh)} timestamp default sysdate + interval '8h'\n"
-                else:
-                    ddl_sql = ddl_sql[:-2] + '\n'
+                ddl_sql = ddl_sql[:-2] + '\n'
                 ddl_sql += ')\n'
-                if req_schema == 'emr':
-                    ddl_sql += 'partitioned by (event_time varchar(128))\n'
-                    ddl_sql += 'stored as parquet\n'
-                    ddl_sql += f"location '{task.conn.s3_path}'\n"
-                ddl_sql += f";\n\n"
+                ddl_sql += 'partitioned by (event_time varchar(128))\n'
+                ddl_sql += 'stored as parquet\n'
+                ddl_sql += f"location '{task.conn.s3_path or ''}'\n"
+                ddl_sql += f";\n"
 
     return JsonResponse({
-        'schema': req_schema,
         'ddl_sql': ddl_sql
     })
 
 
 def update_status(request, task_id):
     task = Task.objects.get(id=task_id)
-    task.status = Task.StatusEnum.COMPLETED.name
+    task.status = Task.StatusEnum.COMPLETED.value
     task.save()
     return redirect(task)
 

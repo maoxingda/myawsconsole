@@ -4,13 +4,19 @@
 {% block extrahead %}{{ block.super }}
     {# 第三方js #}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.8/dayjs.min.js"></script>
-    {# TODO vue会导致无法添加 内联对象，所以需要添加内敛对象的时候，注释掉vue。添加完成之后再反注释 #}
-    {% if original.enable_vue %}
-        <script src="https://cdn.staticfile.org/vue/3.0.5/vue.global.js"></script>
-        <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-    {% endif %}
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 
     {# 自己写的js #}
     <script src="{% static 'js/file.js' %}"></script>
     <script src="{% static 'schemagenerator/js/task/change_form.js' %}"></script>
+
+    <script>
+        django.jQuery(function () {
+            {% if original.status == 'running' %}
+                setTimeout(function () {
+                    location.reload();
+                }, 5000); // 5000毫秒（5秒）
+            {% endif %}
+        });
+    </script>
 {% endblock %}

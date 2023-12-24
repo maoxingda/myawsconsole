@@ -18,8 +18,8 @@ from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
-    path('redshift/', include('redshift.urls')),
-    path('dms/', include('dms.urls')),
+    path('redshift/'       , include('redshift.urls')),
+    path('dms/'            , include('dms.urls')),
     path('schemagenerator/', include('schemagenerator.urls')),
 
     path('', admin.site.urls),
