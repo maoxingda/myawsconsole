@@ -98,7 +98,6 @@ class Task(models.Model):
     task_type = models.CharField('任务类型', max_length=32, choices=TaskTypeEnum.choices, default=TaskTypeEnum.SCHEMA.value)
 
     dms_task_id = models.CharField(max_length=255, null=True, editable=False)
-    enable_vue = models.BooleanField(default=False, editable=False)
 
     def __str__(self):
         return self.name
