@@ -166,9 +166,6 @@ class Task(models.Model):
     def html_actions(self):
         buttons = []
 
-        url = reverse('dms:refresh_endpoints')
-        buttons.append(f'<a href="{url}?server_name={self.conn.dns}">端点</a>')
-
         if self.status != Task.StatusEnum.RUNNING.value:
             url = reverse('schemagenerator:launch_task', args=(self.id, ))
             text = (
@@ -191,6 +188,10 @@ class Task(models.Model):
         if self.status == Task.StatusEnum.RUNNING.value:
             url = reverse('schemagenerator:update_status', args=(self.id, ))
             buttons.append(f'<a href="{url}">更新状态</a>')
+
+        if self.id:
+            url = reverse('schemagenerator:get_table_mappings', args=(self.id, ))
+            buttons.append(f'<a href="{url}">获取表映射</a>')
 
         return mark_safe('&emsp;'.join(buttons))
 

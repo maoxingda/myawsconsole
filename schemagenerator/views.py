@@ -77,24 +77,26 @@ def update_table_mappings(request, task_id):
     task = Task.objects.get(id=task_id)
     client = boto3.client('dms')
     replication_task_id = task.dms_task_id
-    is_find = False
-    replication_task_arn = ''
     try:
         res = client.describe_replication_tasks(
             Filters=[{'Name': 'replication-task-id', 'Values': [replication_task_id]}])
-        is_find = True
         replication_task_arn = res['ReplicationTasks'][0]['ReplicationTaskArn']
-    except botocore.exceptions.ClientError:
-        pass
+    except client.exceptions.ResourceNotFoundFault:
+        replication_task_arn = ''
 
-    if is_find and replication_task_arn:
-        try:
-            client.modify_replication_task(ReplicationTaskArn=replication_task_arn,
-                                           TableMappings=json.dumps(task.table_mappins()))
-        except botocore.exceptions.ClientError:
-            pass
+    if replication_task_arn:
+        client.modify_replication_task(ReplicationTaskArn=replication_task_arn,
+                                       TableMappings=json.dumps(task.table_mappins()))
+
+    messages.success(request, '更新成功')
 
     return redirect(task)
+
+
+def get_table_mappings(request, task_id):
+    task = Task.objects.get(id=task_id)
+
+    return JsonResponse(task.table_mappins())
 
 
 def launch_task(request, task_id):

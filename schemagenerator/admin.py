@@ -72,24 +72,8 @@ class TaskAdmin(admin.ModelAdmin):
     inlines = (TaskTableInlineAdmin, )
     list_display = ('name', 'status', 'conn', )
     autocomplete_fields = ('conn', )
-    readonly_fields = ('fomart_table_mappings', 'status', 'html_actions', )
+    readonly_fields = ('status', 'html_actions', )
     radio_fields = {
         'task_type': admin.HORIZONTAL,
     }
-    fieldsets = [
-        (
-            None,
-            {
-                'fields': ['name', 'conn', 'task_type', 'status', 'html_actions'],
-            },
-        ),
-        (
-            '表映射',
-            {
-                'classes': ['collapse'],
-                'fields': ['fomart_table_mappings'],
-            },
-        ),
-    ]
-    # filter_horizontal = ('tables', )
     view_on_site = False
