@@ -15,7 +15,7 @@ def refresh_tasks(request):
     tasks = []
     client = boto3.client('dms')
     table_name = request.POST.get('table_name', '')
-    endpoint_id = request.GET.get('endpoint_id')
+    endpoint_id = request.GET.get('endpoint_id', '')
     endpoint_arn = ''
     if endpoint_id:
         try:
