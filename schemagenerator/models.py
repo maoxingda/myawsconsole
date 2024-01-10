@@ -165,7 +165,7 @@ class Task(models.Model):
     def html_actions(self):
         buttons = []
 
-        if self.status != Task.StatusEnum.RUNNING.value:
+        if self.id and self.status != Task.StatusEnum.RUNNING.value:
             url = reverse('schemagenerator:launch_task', args=(self.id, ))
             text = (
                 '启动'
