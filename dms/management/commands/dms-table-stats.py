@@ -4,6 +4,7 @@ from operator import itemgetter
 from pprint import pprint
 
 import boto3
+import pandas
 from django.core.management import BaseCommand
 from tabulate import tabulate
 
@@ -70,14 +71,21 @@ class Command(BaseCommand):
                                 table_name = f"{stat['SchemaName']}.{match.group(1)}"
                                 break
                         cdc_counts = stat["Inserts"] + stat["Updates"] + stat["Deletes"]
-                        table_stats[table_name].append([cdc_counts, task["ReplicationTaskIdentifier"]])
-                        # print(f"{table_name:<64}", cdc_counts)
+                        if cdc_counts > 0:
+                            table_stats[table_name].append([
+                                cdc_counts,
+                                task["ReplicationTaskIdentifier"],
+                                task["ReplicationTaskStartDate"].replace(tzinfo=None),
+                            ])
+                            # print(f"{table_name:<64}", cdc_counts, task["ReplicationTaskIdentifier"])
 
         table_stats = [
             [
                 table_name,
-                sum(cnt for cnt, _ in val),
-                val[0][1]
+                sum(cnt for cnt, *_ in val),
+                val[0][2],
+                f"https://cn-northwest-1.console.amazonaws.cn/dms/v2/home"
+                f"?region=cn-northwest-1#taskDetails/{val[0][1]}"
             ]
             for table_name, val in table_stats.items()
         ]
@@ -85,3 +93,6 @@ class Command(BaseCommand):
         print(tabulate(table_stats[:100], showindex="always", tablefmt='simple_grid'))
         # print(i)
         # pprint(sorted(tasks))
+
+        df = pandas.DataFrame(table_stats, columns=["table_name", "cdc_counts", "start_date", "task"])
+        df.to_excel("table-stats.xlsx", index=False)
