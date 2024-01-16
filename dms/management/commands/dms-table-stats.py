@@ -55,6 +55,17 @@ class Command(BaseCommand):
         ):
             for task in drt_page["ReplicationTasks"]:
                 tasks.append(task["ReplicationTaskIdentifier"])
+                endpoint = client.describe_endpoints(
+                    Filters=[
+                        {
+                            "Name": "endpoint-arn",
+                            "Values": [task["SourceEndpointArn"]],
+                        }
+                    ]
+                )["Endpoints"][0]
+                database_name = endpoint.get("DatabaseName", "")
+                if database_name:
+                    database_name += '.'
                 dts_paginator = client.get_paginator("describe_table_statistics")
                 for dts_page in dts_paginator.paginate(
                     ReplicationTaskArn=task["ReplicationTaskArn"]
@@ -72,7 +83,7 @@ class Command(BaseCommand):
                                 break
                         cdc_counts = stat["Inserts"] + stat["Updates"] + stat["Deletes"]
                         if cdc_counts > 0:
-                            table_stats[table_name].append([
+                            table_stats[f"{database_name}{table_name}"].append([
                                 cdc_counts,
                                 task["ReplicationTaskIdentifier"],
                                 task["ReplicationTaskStartDate"].replace(tzinfo=None),
@@ -90,7 +101,7 @@ class Command(BaseCommand):
             for table_name, val in table_stats.items()
         ]
         table_stats.sort(key=itemgetter(1), reverse=True)
-        print(tabulate(table_stats[:100], showindex="always", tablefmt='simple_grid'))
+        print(tabulate(table_stats[:20], showindex="always", tablefmt='simple_grid'))
         # print(i)
         # pprint(sorted(tasks))
 
