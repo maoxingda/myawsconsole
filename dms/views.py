@@ -17,6 +17,12 @@ def refresh_tasks(request):
     table_name = request.POST.get('table_name', '')
     endpoint_id = request.GET.get('endpoint_id', '')
     endpoint_arn = ''
+    del_tasks = []
+    for task in Task.objects.all():
+        if settings.REPLICATION_TASK_SUFFIX not in task.name:
+            del_tasks.append(task)
+    for task in del_tasks:
+        task.delete()
     if endpoint_id:
         try:
             endpoint = Endpoint.objects.get(id=endpoint_id)
