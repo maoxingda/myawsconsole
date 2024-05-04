@@ -60,7 +60,7 @@ def start_s3_load_task(request, task_id):
 
     sql = textwrap.dedent(f"""
             select column_name, data_type, character_maximum_length, numeric_precision, numeric_scale 
-            from svv_all_columns where schema_name = 'temp' and table_name = '{table.name}'
+            from svv_all_columns where schema_name = 'doris_temp' and table_name = '{table.name}'
         """)
     columns = execute_sql(sql, ret_val=True)
 
@@ -105,7 +105,7 @@ def start_s3_load_task(request, task_id):
 
     sql = textwrap.dedent(f"""
         unload (
-            'select * from temp.{task.table.name}'
+            'select * from doris_temp.{task.table.name}'
         )
         to 's3://bi-data-lake/doris/from_redshift/rs_temp/'
         iam_role '{os.getenv('iam_role')}'
@@ -160,7 +160,7 @@ def refresh_table_list(request):
     with psycopg2.connect(dns) as conn:
         with conn.cursor() as cursor:
             sql = textwrap.dedent(f"""
-                select table_name from svv_all_tables where schema_name = 'temp'
+                select table_name from svv_all_tables where schema_name = 'doris_temp'
             """)
             print(sql)
             cursor.execute(sql)
