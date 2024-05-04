@@ -14,7 +14,7 @@ class S3LoadTask(models.Model):
         AGG    = 'a', '聚合模型'
         UNIQUE = 'u', '主键模型'
 
-    table = models.ForeignKey('Table', verbose_name='表', on_delete=models.SET_DEFAULT, default=None)
+    table = models.ForeignKey('Table', verbose_name='表', null=True, on_delete=models.SET_NULL)
 
     type = models.CharField('模型', max_length=1, choices=TableType.choices, default=TableType.DETAIL)
     sort_key = models.CharField('排序键', max_length=256)
@@ -24,7 +24,7 @@ class S3LoadTask(models.Model):
     load_label = models.CharField(editable=False, max_length=128)
 
     def __str__(self):
-        return self.table.name
+        return self.table.name if self.table else str(self.id)
 
     @admin.display(description='操作')
     def html_actions(self):
