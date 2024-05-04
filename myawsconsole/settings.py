@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'redshift',
     'dms',
     'schemagenerator',
+    'doris',
 ]
 
 MIDDLEWARE = [

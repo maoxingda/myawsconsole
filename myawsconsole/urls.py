@@ -21,6 +21,7 @@ urlpatterns = [
     path('redshift/'       , include('redshift.urls')),
     path('dms/'            , include('dms.urls')),
     path('schemagenerator/', include('schemagenerator.urls')),
+    path('doris/'          , include('doris.urls')),
 
     path('', admin.site.urls),
 ]
