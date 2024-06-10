@@ -46,7 +46,7 @@ class Table(models.Model):
         verbose_name_plural = '表'
         ordering = ('name', )
 
-    name = models.CharField('表', max_length=128)
+    name = models.CharField('表', max_length=128, unique=True)
 
     def __str__(self):
         return self.name
@@ -56,7 +56,7 @@ class Table(models.Model):
         buttons = []
 
         if self.id:
-            url = reverse('doris:create_table', args=(self.id,))
-            buttons.append(f'<a href="{url}">create table</a>')
+            url = reverse('doris:create_task', args=(self.id,))
+            buttons.append(f'<a href="{url}">create task</a>')
 
         return mark_safe('&emsp;&emsp'.join(buttons))

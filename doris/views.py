@@ -1,4 +1,5 @@
 import json
+import time
 import os
 import re
 import textwrap
@@ -14,6 +15,7 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 from doris import models
+from redshift.util.corp_wechat import send_message
 
 
 class TargetDatabase(Enum):
@@ -145,7 +147,14 @@ def start_s3_load_task(request, task_id):
         task.load_label = load_label
         task.save()
 
-    # TODO 完成了发企业微信机器人消息通知
+    while True:
+        query_load_progress_sql = f'SHOW LOAD WHERE LABEL = "{task.load_label}" order by CreateTime desc limit 1\n'
+        rows = execute_sql(query_load_progress_sql, TargetDatabase.DORIS, ret_val=True)
+        if rows[0].get('State') == 'FINISHED':
+            send_message(f'###### Doris load 任务：<font color="info">test.{task}</font> 完成')
+            break
+        else:
+            time.sleep(5)
 
     return redirect(reverse('admin:doris_s3loadtask_change', args=(task_id,)))
 
@@ -171,15 +180,16 @@ def refresh_table_list(request):
             print(sql)
             cursor.execute(sql)
             tables = [
-                models.Table(name=row[0]) for row in cursor.fetchall()
+                models.Table(name=row[0])
+                for row in cursor.fetchall()
+                if not models.Table.objects.filter(name=row[0]).exists()
             ]
-            models.Table.objects.all().delete()
             models.Table.objects.bulk_create(tables)
 
     return redirect(reverse('admin:doris_table_changelist'))
 
 
-def create_table(request, table_id):
+def create_task(request, table_id):
     table = models.Table.objects.get(id=table_id)
 
     load_task = models.S3LoadTask.objects.create(table=table)
