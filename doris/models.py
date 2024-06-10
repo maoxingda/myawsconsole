@@ -37,6 +37,9 @@ class S3LoadTask(models.Model):
             url = reverse('doris:query_progress_s3_load_task', args=(self.id,))
             buttons.append(f'<a href="{url}">查询进度</a>')
 
+            url = reverse('doris:query_columns', args=(self.id,))
+            buttons.append(f'<a href="{url}">查询列</a>')
+
         return mark_safe('&emsp;&emsp;'.join(buttons))
 
 

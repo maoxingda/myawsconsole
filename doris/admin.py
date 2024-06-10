@@ -6,6 +6,7 @@ from doris import models
 class S3LoadTaskAdmin(admin.ModelAdmin):
     readonly_fields = (
         'html_actions',
+        'attempts',
     )
     radio_fields = {
         'type': admin.HORIZONTAL,

@@ -81,6 +81,8 @@ def start_s3_load_task(request, task_id):
             create_table_ddl += f'    {column_name} datetime'
         elif data_type == 'timestamp with time zone':
             create_table_ddl += f'    {column_name} datetime'
+        elif data_type == 'double precision':
+            create_table_ddl += f'    {column_name} double'
         else:
             create_table_ddl += f'    {column_name} {data_type}'
         if i + 1 < len(columns):
@@ -112,7 +114,7 @@ def start_s3_load_task(request, task_id):
         unload (
             'select * from doris_temp.{task.table.name}'
         )
-        to 's3://bi-data-lake/doris/from_redshift/rs_temp/'
+        to 's3://bi-data-lake/doris/from_redshift/{task.table.name}/'
         iam_role '{os.getenv('iam_role')}'
         format as parquet
         cleanpath
@@ -122,12 +124,12 @@ def start_s3_load_task(request, task_id):
     task.attempts += 1
     s3 = boto3.resource('s3', region_name='cn-northwest-1')
     bucket = s3.Bucket('bi-data-lake')
-    for i, obj in enumerate(bucket.objects.filter(Prefix='doris/from_redshift/rs_temp'), start=1):
+    for i, obj in enumerate(bucket.objects.filter(Prefix=f'doris/from_redshift/{task.table.name}'), start=1):
         load_label = f'test__{task}__{task.attempts}__{i}'
         load_sql = textwrap.dedent(f'''
             LOAD LABEL {load_label}
             (
-                DATA INFILE("s3://bi-data-lake/doris/from_redshift/rs_temp/{os.path.basename(obj.key)}")
+                DATA INFILE("s3://bi-data-lake/doris/from_redshift/{task.table.name}/{os.path.basename(obj.key)}")
                 INTO TABLE {task}
                 FORMAT AS parquet
                 (
@@ -192,8 +194,26 @@ def refresh_table_list(request):
 def create_task(request, table_id):
     table = models.Table.objects.get(id=table_id)
 
-    load_task = models.S3LoadTask.objects.create(table=table)
+    sql = f"select column_name from svv_redshift_columns where schema_name = 'doris_temp' and table_name = '{table.name}'"
+    print(sql)
+    rows = execute_sql(sql, TargetDatabase.REDSHIFT, ret_val=True)
+    column_name = rows[0][0]
+
+    load_task = models.S3LoadTask.objects.create(table=table, sort_key=column_name, bucket_key=column_name)
 
     messages.info(request, f'Created task {load_task!r}')
+
+    return redirect(reverse('admin:doris_s3loadtask_change', args=(load_task.id,)))
+
+
+def query_columns(request, task_id):
+    load_task = models.S3LoadTask.objects.get(pk=task_id)
+
+    sql = f"select column_name from svv_redshift_columns where schema_name = 'doris_temp' and table_name = '{load_task.table}'"
+    print(sql)
+    rows = execute_sql(sql, TargetDatabase.REDSHIFT, ret_val=True)
+    for row in rows:
+        column_name = row[0]
+        messages.info(request, f" {column_name}")
 
     return redirect(reverse('admin:doris_s3loadtask_change', args=(load_task.id,)))
