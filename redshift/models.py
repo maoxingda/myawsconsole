@@ -36,7 +36,7 @@ class Snapshot(models.Model):
     end_date = models.DateField('结束日期', blank=True, null=True)
 
     def __str__(self):
-        suffix = self.identifier[-19:]
+        suffix = self.identifier[-23:-4]
         suffix_offset = datetime.strptime(suffix, '%Y-%m-%d-%H-%M-%S') + timedelta(hours=8)
         return self.identifier[:-19] + suffix_offset.strftime('%Y-%m-%d-%H-%M-%S')
 

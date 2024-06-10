@@ -5,6 +5,7 @@ import textwrap
 from enum import Enum
 from pprint import pprint
 
+import boto3
 import mysql.connector
 import psycopg2
 from django.contrib import messages
@@ -76,6 +77,8 @@ def start_s3_load_task(request, task_id):
                 create_table_ddl += f'    {column_name} string'
         elif data_type == 'timestamp without time zone':
             create_table_ddl += f'    {column_name} datetime'
+        elif data_type == 'timestamp with time zone':
+            create_table_ddl += f'    {column_name} datetime'
         else:
             create_table_ddl += f'    {column_name} {data_type}'
         if i + 1 < len(columns):
@@ -110,36 +113,39 @@ def start_s3_load_task(request, task_id):
         to 's3://bi-data-lake/doris/from_redshift/rs_temp/'
         iam_role '{os.getenv('iam_role')}'
         format as parquet
-        parallel off
         cleanpath
-        maxfilesize as 6GB
     """)
     execute_sql(sql)
 
     task.attempts += 1
-    load_label = f'test__{task}__{task.attempts}'
-    load_sql = textwrap.dedent(f'''
-        LOAD LABEL {load_label}
-        (
-            DATA INFILE("s3://bi-data-lake/doris/from_redshift/rs_temp/000.parquet")
-            INTO TABLE {task}
-            FORMAT AS parquet
+    s3 = boto3.resource('s3', region_name='cn-northwest-1')
+    bucket = s3.Bucket('bi-data-lake')
+    for i, obj in enumerate(bucket.objects.filter(Prefix='doris/from_redshift/rs_temp'), start=1):
+        load_label = f'test__{task}__{task.attempts}__{i}'
+        load_sql = textwrap.dedent(f'''
+            LOAD LABEL {load_label}
             (
-                {", ".join(row[0] for row in columns)}
+                DATA INFILE("s3://bi-data-lake/doris/from_redshift/rs_temp/{os.path.basename(obj.key)}")
+                INTO TABLE {task}
+                FORMAT AS parquet
+                (
+                    {", ".join(row[0] for row in columns)}
+                )
             )
-        )
-        WITH S3
-        (
-            "AWS_ENDPOINT"   = "http://s3.cn-northwest-1.amazonaws.com.cn",
-            "AWS_ACCESS_KEY" = "{os.getenv("AWS_ACCESS_KEY")}",
-            "AWS_SECRET_KEY" = "{os.getenv("AWS_SECRET_KEY")}",
-            "AWS_REGION"     = "cn-northwest-1"
-        )
-    ''')
-    execute_sql(load_sql, TargetDatabase.DORIS)
+            WITH S3
+            (
+                "AWS_ENDPOINT"   = "http://s3.cn-northwest-1.amazonaws.com.cn",
+                "AWS_ACCESS_KEY" = "{os.getenv("AWS_ACCESS_KEY")}",
+                "AWS_SECRET_KEY" = "{os.getenv("AWS_SECRET_KEY")}",
+                "AWS_REGION"     = "cn-northwest-1"
+            )
+        ''')
+        execute_sql(load_sql, TargetDatabase.DORIS)
 
-    task.load_label = load_label
-    task.save()
+        task.load_label = load_label
+        task.save()
+
+    # TODO 完成了发企业微信机器人消息通知
 
     return redirect(reverse('admin:doris_s3loadtask_change', args=(task_id,)))
 

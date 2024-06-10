@@ -47,11 +47,12 @@ def refresh_snapshots(request):
     else:
         end_time = datetime.utcnow()
     paginator = client.get_paginator('describe_cluster_snapshots')
-    snapshot_identifier_pattern = re.compile(r'\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d$')
+    snapshot_identifier_pattern = re.compile(r'\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d-\d\d\d$')
     for page in paginator.paginate(StartTime=start_time, EndTime=end_time):
         for snapshot in page['Snapshots']:
             if not snapshot_identifier_pattern.search(snapshot['SnapshotIdentifier']):
                 continue
+            print(snapshot['SnapshotIdentifier'])
             if Snapshot.objects.filter(cluster=snapshot['ClusterIdentifier'], identifier=snapshot['SnapshotIdentifier']).exists():
                 continue
             snapshots.append(
@@ -177,7 +178,7 @@ def launch_restore_cluster_task(request, task_id):
         cluster_id = task.snapshot.cluster
         snapshot_id = task.snapshot.identifier
         local_datetime_from_snapshot_id = (
-                    datetime.strptime(snapshot_id[-19:], "%Y-%m-%d-%H-%M-%S") + timedelta(hours=8)).strftime(
+                    datetime.strptime(snapshot_id[-23:-4], "%Y-%m-%d-%H-%M-%S") + timedelta(hours=8)).strftime(
             '%Y%m%dT%H%M%S')
         restore_cluster_id = f'{cluster_id}-snapshot-{local_datetime_from_snapshot_id}'
 

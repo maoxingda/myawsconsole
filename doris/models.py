@@ -17,11 +17,11 @@ class S3LoadTask(models.Model):
     table = models.ForeignKey('Table', verbose_name='表', null=True, on_delete=models.SET_NULL)
 
     type = models.CharField('模型', max_length=1, choices=TableType.choices, default=TableType.DETAIL)
-    sort_key = models.CharField('排序键', max_length=256)
-    bucket_key = models.CharField('分桶键', max_length=256)
+    sort_key = models.CharField('排序键', max_length=256, null=True)
+    bucket_key = models.CharField('分桶键', max_length=256, null=True)
 
-    attempts = models.SmallIntegerField('执行次数', editable=False)
-    load_label = models.CharField(editable=False, max_length=128)
+    attempts = models.SmallIntegerField('执行次数', editable=False, default=0)
+    load_label = models.CharField(editable=False, max_length=128, default='')
 
     def __str__(self):
         return self.table.name if self.table else str(self.id)
