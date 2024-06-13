@@ -23,7 +23,7 @@ class TargetDatabase(Enum):
     REDSHIFT = 1
 
 
-def execute_sql(sql: str, tgt_db: TargetDatabase = TargetDatabase.REDSHIFT, ret_val: bool = False):
+def execute_sql(sql: str, tgt_db: TargetDatabase = TargetDatabase.REDSHIFT, ret_val: bool = False, doris_db='test'):
     if tgt_db == TargetDatabase.REDSHIFT:
         dns = os.getenv('dns')
         with psycopg2.connect(dns) as conn:
@@ -39,7 +39,7 @@ def execute_sql(sql: str, tgt_db: TargetDatabase = TargetDatabase.REDSHIFT, ret_
             'password': os.getenv('password'),
             'host'    : '10.128.1.220',
             'port'    : '6033',
-            'database': 'test',
+            'database': doris_db,
         }
         conn = mysql.connector.connect(**config)
         cursor = conn.cursor(dictionary=True)
@@ -61,102 +61,105 @@ def start_s3_load_task(request, task_id):
     task: models.S3LoadTask = models.S3LoadTask.objects.select_related('table').get(id=task_id)
     table = task.table
 
-    sql = textwrap.dedent(f"""
-            select column_name, data_type, character_maximum_length, numeric_precision, numeric_scale 
-            from svv_all_columns where schema_name = 'doris_temp' and table_name = '{table.name}'
-        """)
-    columns = execute_sql(sql, ret_val=True)
+    if task.is_create_table:
+        sql = textwrap.dedent(f"""
+                select column_name, data_type, character_maximum_length, numeric_precision, numeric_scale 
+                from svv_all_columns where schema_name = 'doris_temp' and table_name = '{table.name}'
+            """)
+        columns = execute_sql(sql, ret_val=True)
 
-    drop_table_ddl = f'drop table if exists test.{table.name}\n'
-    create_table_ddl = f'create table test.{table.name}\n' \
-                       f'(\n'
-    for i, row in enumerate(columns):
-        column_name, data_type, character_maximum_length, numeric_precision, numeric_scale = row
-        if data_type == 'character varying':
-            if column_name in re.split(r',\s*', task.sort_key):
-                create_table_ddl += f'    {column_name} varchar({character_maximum_length})'
+        drop_table_ddl = f'drop table if exists test.{table.name}\n'
+        create_table_ddl = f'create table test.{table.name}\n' \
+                           f'(\n'
+        for i, row in enumerate(columns):
+            column_name, data_type, character_maximum_length, numeric_precision, numeric_scale = row
+            if data_type == 'character varying':
+                if column_name in re.split(r',\s*', task.sort_key):
+                    create_table_ddl += f'    {column_name} varchar({character_maximum_length})'
+                else:
+                    create_table_ddl += f'    {column_name} string'
+            elif data_type == 'timestamp without time zone':
+                create_table_ddl += f'    {column_name} datetime'
+            elif data_type == 'timestamp with time zone':
+                create_table_ddl += f'    {column_name} datetime'
+            elif data_type == 'double precision':
+                create_table_ddl += f'    {column_name} double'
             else:
-                create_table_ddl += f'    {column_name} string'
-        elif data_type == 'timestamp without time zone':
-            create_table_ddl += f'    {column_name} datetime'
-        elif data_type == 'timestamp with time zone':
-            create_table_ddl += f'    {column_name} datetime'
-        elif data_type == 'double precision':
-            create_table_ddl += f'    {column_name} double'
+                create_table_ddl += f'    {column_name} {data_type}'
+            if i + 1 < len(columns):
+                create_table_ddl += ','
+            create_table_ddl += '\n'
+        create_table_ddl += ')\n'
+
+        if task.type == models.S3LoadTask.TableType.DETAIL:
+            create_table_ddl += f'duplicate key({task.sort_key})\n'
+        elif task.type == models.S3LoadTask.TableType.AGG:
+            create_table_ddl += f'aggregate key({task.sort_key})\n'
+        elif task.type == models.S3LoadTask.TableType.UNIQUE:
+            create_table_ddl += f'unique key({task.sort_key})\n'
         else:
-            create_table_ddl += f'    {column_name} {data_type}'
-        if i + 1 < len(columns):
-            create_table_ddl += ','
-        create_table_ddl += '\n'
-    create_table_ddl += ')\n'
+            raise Exception(f'Unknown table data model: {task.type!r}')
 
-    if task.type == models.S3LoadTask.TableType.DETAIL:
-        create_table_ddl += f'duplicate key({task.sort_key})\n'
-    elif task.type == models.S3LoadTask.TableType.AGG:
-        create_table_ddl += f'aggregate key({task.sort_key})\n'
-    elif task.type == models.S3LoadTask.TableType.UNIQUE:
-        create_table_ddl += f'unique key({task.sort_key})\n'
-    else:
-        raise Exception(f'Unknown table data model: {task.type!r}')
+        if not task.bucket_key:
+            raise Exception(f'Unknown table bucket key: {task.bucket_key!r}')
 
-    if not task.bucket_key:
-        raise Exception(f'Unknown table bucket key: {task.bucket_key!r}')
+        create_table_ddl += f'distributed by hash({task.bucket_key}) buckets 3\n'
+        create_table_ddl += f'properties\n(\n'
+        create_table_ddl += f'    "replication_allocation" = "tag.location.group_stream:3"\n'
+        create_table_ddl += f')'
 
-    create_table_ddl += f'distributed by hash({task.bucket_key}) buckets 3\n'
-    create_table_ddl += f'properties\n(\n'
-    create_table_ddl += f'    "replication_allocation" = "tag.location.group_stream:3"\n'
-    create_table_ddl += f')'
+        execute_sql(drop_table_ddl, TargetDatabase.DORIS)
+        execute_sql(create_table_ddl, TargetDatabase.DORIS)
 
-    execute_sql(drop_table_ddl, TargetDatabase.DORIS)
-    execute_sql(create_table_ddl, TargetDatabase.DORIS)
+    if task.is_unload_data:
+        sql = textwrap.dedent(f"""
+            unload (
+                'select * from doris_temp.{task.table.name}'
+            )
+            to 's3://bi-data-lake/doris/from_redshift/{task.table.name}/'
+            iam_role '{os.getenv('iam_role')}'
+            format as parquet
+            cleanpath
+        """)
+        execute_sql(sql)
 
-    sql = textwrap.dedent(f"""
-        unload (
-            'select * from doris_temp.{task.table.name}'
-        )
-        to 's3://bi-data-lake/doris/from_redshift/{task.table.name}/'
-        iam_role '{os.getenv('iam_role')}'
-        format as parquet
-        cleanpath
-    """)
-    execute_sql(sql)
-
-    task.attempts += 1
-    s3 = boto3.resource('s3', region_name='cn-northwest-1')
-    bucket = s3.Bucket('bi-data-lake')
-    for i, obj in enumerate(bucket.objects.filter(Prefix=f'doris/from_redshift/{task.table.name}'), start=1):
-        load_label = f'test__{task}__{task.attempts}__{i}'
-        load_sql = textwrap.dedent(f'''
-            LOAD LABEL {load_label}
-            (
-                DATA INFILE("s3://bi-data-lake/doris/from_redshift/{task.table.name}/{os.path.basename(obj.key)}")
-                INTO TABLE {task}
-                FORMAT AS parquet
+    if task.is_load_data:
+        task.attempts += 1
+        s3 = boto3.resource('s3', region_name='cn-northwest-1')
+        bucket = s3.Bucket('bi-data-lake')
+        for i, obj in enumerate(bucket.objects.filter(Prefix=f'doris/from_redshift/{task.table.name}'), start=1):
+            load_label = f'test__{task}__{task.attempts}__{i}'
+            load_sql = textwrap.dedent(f'''
+                LOAD LABEL {load_label}
                 (
-                    {", ".join(row[0] for row in columns)}
+                    DATA INFILE("s3://bi-data-lake/doris/from_redshift/{task.table.name}/{os.path.basename(obj.key)}")
+                    INTO TABLE {task}
+                    FORMAT AS parquet
+                    (
+                        {", ".join(row[0] for row in columns)}
+                    )
                 )
-            )
-            WITH S3
-            (
-                "AWS_ENDPOINT"   = "http://s3.cn-northwest-1.amazonaws.com.cn",
-                "AWS_ACCESS_KEY" = "{os.getenv("AWS_ACCESS_KEY")}",
-                "AWS_SECRET_KEY" = "{os.getenv("AWS_SECRET_KEY")}",
-                "AWS_REGION"     = "cn-northwest-1"
-            )
-        ''')
-        execute_sql(load_sql, TargetDatabase.DORIS)
+                WITH S3
+                (
+                    "AWS_ENDPOINT"   = "http://s3.cn-northwest-1.amazonaws.com.cn",
+                    "AWS_ACCESS_KEY" = "{os.getenv("AWS_ACCESS_KEY")}",
+                    "AWS_SECRET_KEY" = "{os.getenv("AWS_SECRET_KEY")}",
+                    "AWS_REGION"     = "cn-northwest-1"
+                )
+            ''')
+            execute_sql(load_sql, TargetDatabase.DORIS)
 
-        task.load_label = load_label
-        task.save()
+            task.load_label = load_label
+            task.save()
 
-    while True:
-        query_load_progress_sql = f'SHOW LOAD WHERE LABEL = "{task.load_label}" order by CreateTime desc limit 1\n'
-        rows = execute_sql(query_load_progress_sql, TargetDatabase.DORIS, ret_val=True)
-        if rows[0].get('State') == 'FINISHED':
-            send_message(f'###### Doris load 任务：<font color="info">test.{task}</font> 完成')
-            break
-        else:
-            time.sleep(5)
+        while True:
+            query_load_progress_sql = f'SHOW LOAD WHERE LABEL = "{task.load_label}" order by CreateTime desc limit 1\n'
+            rows = execute_sql(query_load_progress_sql, TargetDatabase.DORIS, ret_val=True)
+            if rows[0].get('State') == 'FINISHED':
+                send_message(f'###### Doris load 任务：<font color="info">test.{task}</font> 完成')
+                break
+            else:
+                time.sleep(5)
 
     return redirect(reverse('admin:doris_s3loadtask_change', args=(task_id,)))
 
@@ -215,5 +218,21 @@ def query_columns(request, task_id):
     for row in rows:
         column_name = row[0]
         messages.info(request, f" {column_name}")
+
+    return redirect(reverse('admin:doris_s3loadtask_change', args=(load_task.id,)))
+
+
+def refresh_doris_db(request, task_id):
+    load_task = models.S3LoadTask.objects.get(pk=task_id)
+
+    sql = f"show databases"
+    rows = execute_sql(sql, TargetDatabase.DORIS, ret_val=True)
+
+    models.DorisDb.objects.all().delete()
+    models.DorisDb.objects.bulk_create(
+        models.DorisDb(name=row['Database']) for row in rows
+    )
+
+    messages.success(request, f'刷新数据库成功')
 
     return redirect(reverse('admin:doris_s3loadtask_change', args=(load_task.id,)))

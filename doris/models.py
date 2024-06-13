@@ -4,6 +4,16 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 
+class DorisDb(models.Model):
+    class Meta:
+        verbose_name = verbose_name_plural = 'Doris数据库'
+
+    name = models.CharField(max_length=32, verbose_name='数据库')
+
+    def __str__(self):
+        return self.name
+
+
 class S3LoadTask(models.Model):
     class Meta:
         verbose_name = 'S3 LOAD'
@@ -15,8 +25,12 @@ class S3LoadTask(models.Model):
         UNIQUE = 'u', '主键模型'
 
     table = models.ForeignKey('Table', verbose_name='表', null=True, on_delete=models.SET_NULL)
+    doris_db = models.ForeignKey(DorisDb, verbose_name='数据库', null=True, on_delete=models.SET_NULL)
 
     type = models.CharField('模型', max_length=1, choices=TableType.choices, default=TableType.DETAIL)
+    is_create_table = models.BooleanField('建表', default=False)
+    is_unload_data = models.BooleanField('卸载数据', default=False)
+    is_load_data = models.BooleanField('加载数据', default=False)
     sort_key = models.CharField('排序键', max_length=256, null=True)
     bucket_key = models.CharField('分桶键', max_length=256, null=True)
 
@@ -39,6 +53,9 @@ class S3LoadTask(models.Model):
 
             url = reverse('doris:query_columns', args=(self.id,))
             buttons.append(f'<a href="{url}">查询列</a>')
+
+            url = reverse('doris:refresh_doris_db', args=(self.id,))
+            buttons.append(f'<a href="{url}">刷新数据库</a>')
 
         return mark_safe('&emsp;&emsp;'.join(buttons))
 
