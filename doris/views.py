@@ -35,10 +35,10 @@ def execute_sql(sql: str, tgt_db: TargetDatabase = TargetDatabase.REDSHIFT, ret_
                     return cursor.fetchall()
     elif tgt_db == TargetDatabase.DORIS:
         config = {
-            'user'    : 'rdw',
+            'user'    : os.getenv('doris_user'),
             'password': os.getenv('password'),
-            'host'    : '10.128.1.220',
-            'port'    : '6033',
+            'host'    : os.getenv('doris_host'),
+            'port'    : os.getenv('doris_port'),
             'database': doris_db,
         }
         conn = mysql.connector.connect(**config)
@@ -105,18 +105,23 @@ def start_s3_load_task(request, task_id):
 
         create_table_ddl += f'distributed by hash({task.bucket_key}) buckets 3\n'
         create_table_ddl += f'properties\n(\n'
-        create_table_ddl += f'    "replication_allocation" = "tag.location.group_stream:3"\n'
+        if os.getenv('env') == 'prod':
+            create_table_ddl += f'    "replication_allocation" = "tag.location.group_stream:3"\n'
+        else:
+            create_table_ddl += f'    "replication_allocation" = "tag.location.group_batch:3"\n'
         create_table_ddl += f')'
 
         execute_sql(drop_table_ddl, TargetDatabase.DORIS)
         execute_sql(create_table_ddl, TargetDatabase.DORIS)
+
+    bucket_name = 'bi-data-lake' if os.getenv('env') == 'prod' else 'bi-data-store'
 
     if task.is_unload_data:
         sql = textwrap.dedent(f"""
             unload (
                 'select * from doris_temp.{task.table.name}'
             )
-            to 's3://bi-data-lake/doris/from_redshift/{task.table.name}/'
+            to 's3://{bucket_name}/doris/from_redshift/{task.table.name}/'
             iam_role '{os.getenv('iam_role')}'
             format as parquet
             cleanpath
@@ -126,13 +131,13 @@ def start_s3_load_task(request, task_id):
     if task.is_load_data:
         task.attempts += 1
         s3 = boto3.resource('s3', region_name='cn-northwest-1')
-        bucket = s3.Bucket('bi-data-lake')
+        bucket = s3.Bucket(bucket_name)
         for i, obj in enumerate(bucket.objects.filter(Prefix=f'doris/from_redshift/{task.table.name}'), start=1):
             load_label = f'test__{task}__{task.attempts}__{i}'
             load_sql = textwrap.dedent(f'''
                 LOAD LABEL {load_label}
                 (
-                    DATA INFILE("s3://bi-data-lake/doris/from_redshift/{task.table.name}/{os.path.basename(obj.key)}")
+                    DATA INFILE("s3://{bucket_name}/doris/from_redshift/{task.table.name}/{os.path.basename(obj.key)}")
                     INTO TABLE {task}
                     FORMAT AS parquet
                     (
