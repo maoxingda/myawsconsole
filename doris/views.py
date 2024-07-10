@@ -106,9 +106,9 @@ def start_s3_load_task(request, task_id):
         create_table_ddl += f'distributed by hash({task.bucket_key}) buckets 3\n'
         create_table_ddl += f'properties\n(\n'
         if os.getenv('env') == 'prod':
-            create_table_ddl += f'    "replication_allocation" = "tag.location.group_stream:3"\n'
+            create_table_ddl += f'    "replication_allocation" = "tag.location.group_stream:1"\n'
         else:
-            create_table_ddl += f'    "replication_allocation" = "tag.location.group_batch:3"\n'
+            create_table_ddl += f'    "replication_allocation" = "tag.location.default:1"\n'
         create_table_ddl += f')'
 
         execute_sql(drop_table_ddl, TargetDatabase.DORIS)
@@ -160,7 +160,7 @@ def start_s3_load_task(request, task_id):
         while True:
             query_load_progress_sql = f'SHOW LOAD WHERE LABEL = "{task.load_label}" order by CreateTime desc limit 1\n'
             rows = execute_sql(query_load_progress_sql, TargetDatabase.DORIS, ret_val=True)
-            if rows[0].get('State') == 'FINISHED':
+            if rows[0].get('State') in ('FINISHED', 'CANCELLED'):
                 send_message(f'###### Doris load 任务：<font color="info">test.{task}</font> 完成')
                 break
             else:
@@ -241,3 +241,66 @@ def refresh_doris_db(request, task_id):
     messages.success(request, f'刷新数据库成功')
 
     return redirect(reverse('admin:doris_s3loadtask_change', args=(load_task.id,)))
+
+
+def routineload_refresh(request):
+    rls = []
+    dbs = models.DorisDb.objects.all()
+    for db in dbs:
+        routine_loads = execute_sql(
+            f'show all routine load',
+            TargetDatabase.DORIS, doris_db=db.name, ret_val=True
+        )
+        for rl in routine_loads:
+            if rl['State'] == 'STOPPED':
+                continue
+            rls.append(
+                models.RoutineLoad(
+                    name=rl['Name'],
+                    state=rl['State'],
+                    db=db,
+                )
+            )
+
+    models.RoutineLoad.objects.all().delete()
+    models.RoutineLoad.objects.bulk_create(rls)
+
+    return redirect(reverse('admin:doris_routineload_changelist'))
+
+
+def resume_routine_load(routine_load: models.RoutineLoad):
+    execute_sql(f'resume routine load for {routine_load.name}', TargetDatabase.DORIS, doris_db=routine_load.db.name)
+
+
+def recreate_routine_load(routine_load: models.RoutineLoad):
+    def get_routine_load_live_state():
+        state = execute_sql(
+            f'show routine load for {routine_load.name}',
+            TargetDatabase.DORIS, doris_db=routine_load.db.name, ret_val=True
+        )[0]['State']
+        return state
+
+    if get_routine_load_live_state() != 'STOPPED':
+        sql = f'stop routine load for {routine_load.name}'
+        execute_sql(sql, TargetDatabase.DORIS, doris_db=routine_load.db.name)
+
+    sql = f'show create routine load for {routine_load.name}'
+    sql = execute_sql(sql, TargetDatabase.DORIS, doris_db=routine_load.db.name, ret_val=True)[0]['CreateStmt']
+    execute_sql(f'stop routine load for {routine_load.name}', TargetDatabase.DORIS, doris_db=routine_load.db.name)
+    execute_sql(sql, TargetDatabase.DORIS, doris_db=routine_load.db.name)
+
+
+def routineload_resume(request, pk):
+    routine_load = models.RoutineLoad.objects.get(pk=pk)
+
+    resume_routine_load(routine_load)
+
+    return redirect(reverse('admin:doris_routineload_change', args=(routine_load.id,)))
+
+
+def routineload_recreate(request, pk):
+    routine_load = models.RoutineLoad.objects.get(pk=pk)
+
+    recreate_routine_load(routine_load)
+
+    return redirect(reverse('admin:doris_routineload_change', args=(routine_load.id,)))

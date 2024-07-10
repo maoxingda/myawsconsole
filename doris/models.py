@@ -80,3 +80,32 @@ class Table(models.Model):
             buttons.append(f'<a href="{url}">create task</a>')
 
         return mark_safe('&emsp;&emsp'.join(buttons))
+
+
+class RoutineLoad(models.Model):
+    class Meta:
+        verbose_name = verbose_name_plural = '例行加载任务'
+        unique_together = ('db', 'name')
+        ordering = ('db', 'name')
+
+    name = models.CharField(max_length=32, verbose_name='名称')
+    state = models.CharField(max_length=32, verbose_name='状态')
+
+    db = models.ForeignKey(DorisDb, verbose_name='数据库', null=True, on_delete=models.SET_NULL)
+
+    def __str__(self):
+        return f'{self.db}.{self.name}'
+
+    @admin.display(description='操作')
+    def html_actions(self):
+        buttons = []
+
+        if self.id:
+            if self.state == 'PAUSED':
+                url = reverse('doris:routineload_resume', args=(self.id,))
+                buttons.append(f'<a href="{url}">恢复</a>')
+
+            url = reverse('doris:routineload_recreate', args=(self.id,))
+            buttons.append(f'<a href="{url}">重建</a>')
+
+        return mark_safe('&emsp;&emsp;'.join(buttons))
