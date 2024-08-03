@@ -22,7 +22,7 @@ def refresh_clusters(request):
     restore_cluster_pattern = re.compile(r'snapshot-\d{8}t\d{6}$')
     for page in paginator.paginate():
         for cluster in page['Clusters']:
-            if restore_cluster_pattern.search(cluster['ClusterIdentifier']) and cluster['ClusterStatus'] == 'available':
+            if restore_cluster_pattern.search(cluster['ClusterIdentifier']):
                 if not Cluster.objects.filter(identifier=cluster['ClusterIdentifier']).exists():
                     clusters.append(Cluster(identifier=cluster['ClusterIdentifier']))
 
@@ -201,6 +201,10 @@ def launch_restore_cluster_task(request, task_id):
                 ClusterIdentifier=restore_cluster_id,
                 SnapshotIdentifier=snapshot_id,
                 SnapshotClusterIdentifier=cluster_id,
+                PubliclyAccessible=False,
+                # IamRoles=[
+                #     'arn:aws-cn:iam::321659100662:role/bi-redshift-s3',
+                # ],
                 ClusterSubnetGroupName=response['Clusters'][0]['ClusterSubnetGroupName'],
                 ClusterParameterGroupName=response['Clusters'][0]['ClusterParameterGroups'][0]['ParameterGroupName'],
                 VpcSecurityGroupIds=[response['Clusters'][0]['VpcSecurityGroups'][0]['VpcSecurityGroupId']],
