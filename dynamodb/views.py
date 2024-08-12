@@ -25,13 +25,6 @@ def order_list_refresh(request):
     return redirect(reverse('admin:dynamodb_order_changelist'))
 
 
-def order_format(request, pk):
-    obj = models.Order.objects.get(pk=pk)
-    content = json.dumps(obj.content, indent=4, ensure_ascii=False)
-    messages.info(request, mark_safe(f'<pre>{content}</pre>'))
-    return redirect(reverse('admin:dynamodb_order_change', args=[pk]))
-
-
 def order_search(request):
     term = request.GET.get('term')
 
@@ -53,13 +46,6 @@ def main_transaction_list_refresh(request):
         models.MainTransaction(main_transaction_rn=item['main_transaction_rn'], content=item).save()
 
     return redirect(reverse('admin:dynamodb_maintransaction_changelist'))
-
-
-def main_transaction_format(request, pk):
-    obj = models.MainTransaction.objects.get(pk=pk)
-    content = json.dumps(obj.content, indent=4, ensure_ascii=False)
-    messages.info(request, mark_safe(f'<pre>{content}</pre>'))
-    return redirect(reverse('admin:dynamodb_maintransaction_change', args=[pk]))
 
 
 def main_transaction_search(request):
