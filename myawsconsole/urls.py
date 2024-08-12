@@ -22,6 +22,7 @@ urlpatterns = [
     path('dms/'            , include('dms.urls')),
     path('schemagenerator/', include('schemagenerator.urls')),
     path('doris/'          , include('doris.urls')),
+    path('dynamodb/'       , include('dynamodb.urls')),
 
     path('', admin.site.urls),
 ]
