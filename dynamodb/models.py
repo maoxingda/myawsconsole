@@ -1,9 +1,37 @@
+import textwrap
+
 from django.db import models
 from django.contrib import admin
 from django.utils.safestring import mark_safe
 from django.shortcuts import reverse
+from django.template import Template, Context
 
 import json
+
+
+def format_item(item):
+    content = textwrap.dedent("""
+        <pre>
+            <table>
+                <tr>
+                    <th>属性</th>
+                    <th>数据</th>
+                </tr>
+                {% for attr, val in content.items %}
+                <tr>
+                    <td>{{ attr }}</td>
+                    <td>{{ val }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </pre>
+    """)
+
+    context = Context({"content": item})
+
+    content = Template(content).render(context)
+
+    return mark_safe(content)
 
 
 class Order(models.Model):
@@ -18,9 +46,7 @@ class Order(models.Model):
 
     @admin.display(description='内容')
     def content_format(self):
-        content = json.dumps(self.content, indent=4, ensure_ascii=False)
-
-        return mark_safe(f'<pre>{content}</pre>')
+        return format_item(self.content)
 
 
 class MainTransaction(models.Model):
@@ -35,6 +61,4 @@ class MainTransaction(models.Model):
 
     @admin.display(description='内容')
     def content_format(self):
-        content = json.dumps(self.content, indent=4, ensure_ascii=False)
-
-        return mark_safe(f'<pre>{content}</pre>')
+        return format_item(self.content)
