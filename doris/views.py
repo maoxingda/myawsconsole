@@ -15,7 +15,7 @@ from django.utils.safestring import mark_safe
 
 from doris import models
 from redshift.util.corp_wechat import send_message
-from utils.sql import execute_sql
+from utils.sql import execute_sql, TargetDatabase
 
 
 def start_s3_load_task(request, task_id):

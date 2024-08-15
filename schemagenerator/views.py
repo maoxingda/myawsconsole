@@ -60,7 +60,7 @@ def db_tables(request, conn_id):
 
         tables = []
         for row in cursor.fetchall():
-            table_name = row['table_name']
+            table_name = row.get('TABLE_NAME', row.get('table_name'))
             if Table.objects.filter(conn=db_conn, name=table_name).exists():
                 continue
             tables.append(Table(name=table_name, conn=db_conn))
