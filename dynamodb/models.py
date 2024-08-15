@@ -11,6 +11,7 @@ import json
 
 def format_item(item):
     content = textwrap.dedent("""
+        {% load date_format %}
         <pre>
             <table>
                 <tr>
@@ -20,7 +21,7 @@ def format_item(item):
                 {% for attr, val in content.items %}
                 <tr>
                     <td>{{ attr }}</td>
-                    <td>{{ val }}</td>
+                    <td>{{ val | date_format }}</td>
                 </tr>
                 {% endfor %}
             </table>
