@@ -22,13 +22,13 @@ def start_s3_load_task(request, task_id):
     task: models.S3LoadTask = models.S3LoadTask.objects.select_related('table').get(id=task_id)
     table = task.table
 
-    if task.is_create_table:
-        sql = textwrap.dedent(f"""
-                select column_name, data_type, character_maximum_length, numeric_precision, numeric_scale 
-                from svv_all_columns where schema_name = 'doris_temp' and table_name = '{table.name}'
-            """)
-        columns = execute_sql(sql, ret_val=True)
+    sql = textwrap.dedent(f"""
+            select column_name, data_type, character_maximum_length, numeric_precision, numeric_scale 
+            from svv_all_columns where schema_name = 'doris_temp' and table_name = '{table.name}'
+        """)
+    columns = execute_sql(sql, ret_val=True)
 
+    if task.is_create_table:
         drop_table_ddl = f'drop table if exists test.{table.name}\n'
         create_table_ddl = f'create table test.{table.name}\n' \
                            f'(\n'
