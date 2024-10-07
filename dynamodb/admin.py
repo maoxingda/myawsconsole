@@ -31,3 +31,25 @@ class MainTransactionAdmin(DisableAddChangePermAdmin):
     search_fields = (
         'main_transaction_rn',
     )
+
+
+@admin.register(models.AccountTransaction)
+class AccountTransactionAdmin(DisableAddChangePermAdmin):
+    list_display = (
+        '__str__',
+        'content_format',
+    )
+    search_fields = (
+        'main_transaction_rn',
+    )
+
+
+@admin.register(models.AccountTransactionDetail)
+class AccountTransactionDetailAdmin(DisableAddChangePermAdmin):
+    list_display = (
+        'account_transaction_detail_rn',
+        'content_format',
+    )
+    search_fields = (
+        'account_transaction_detail_rn',
+    )

@@ -56,3 +56,37 @@ def main_transaction_search(request):
             models.MainTransaction(main_transaction_rn=item['main_transaction_rn'], content=item).save()
 
     return redirect(reverse('admin:dynamodb_maintransaction_changelist'))
+
+
+def account_transaction_search(request):
+    term = request.GET.get('term')
+
+    from dynamodb.orm.models import AccountTransaction
+
+    if len(term.strip()) > 0:
+        for item in AccountTransaction.query(hash_key=term):
+            models.AccountTransaction(
+                main_transaction_rn=item.main_transaction_rn,
+                account_rn=item.account_rn,
+                content=item.to_simple_dict(),
+            ).save()
+
+    return redirect(reverse('admin:dynamodb_accounttransaction_changelist'))
+
+
+def account_transaction_detail_search(request):
+    term = request.GET.get('term')
+
+    from dynamodb.orm.models import AccountTransactionDetail
+
+    if len(term.strip()) > 0:
+        try:
+            atd = AccountTransactionDetail.get(hash_key=term)
+            models.AccountTransactionDetail(
+                account_transaction_detail_rn=atd.account_transaction_detail_rn,
+                content=atd.to_simple_dict(),
+            ).save()
+        except AccountTransactionDetail.DoesNotExist:
+            print(f'No data found for: {term}')
+
+    return redirect(reverse('admin:dynamodb_accounttransactiondetail_changelist'))

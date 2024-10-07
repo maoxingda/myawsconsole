@@ -10,4 +10,8 @@ urlpatterns = [
 
     path('main_transaction/list/refresh/'   , views.main_transaction_list_refresh, name = 'main_transaction_list_refresh'),
     path('main_transaction/list/search/'    , views.main_transaction_search      , name = 'main_transaction_search'),
+
+    path('account_transaction/list/search/', views.account_transaction_search, name = 'account_transaction_search'),
+
+    path('account_transaction_detail/list/search/', views.account_transaction_detail_search, name = 'account_transaction_detail_search'),
 ]

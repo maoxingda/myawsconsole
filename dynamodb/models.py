@@ -63,3 +63,34 @@ class MainTransaction(models.Model):
     @admin.display(description='内容')
     def content_format(self):
         return format_item(self.content)
+
+
+class AccountTransaction(models.Model):
+    class Meta:
+        verbose_name = verbose_name_plural = '账户交易'
+
+    main_transaction_rn = models.CharField(max_length=100)
+    account_rn = models.CharField(max_length=100)
+    content = models.JSONField(default=dict)
+
+    def __str__(self):
+        return self.account_rn
+
+    @admin.display(description='内容')
+    def content_format(self):
+        return format_item(self.content)
+
+
+class AccountTransactionDetail(models.Model):
+    class Meta:
+        verbose_name = verbose_name_plural = '账户交易详情'
+
+    account_transaction_detail_rn = models.CharField(max_length=100)
+    content = models.JSONField(default=dict)
+
+    def __str__(self):
+        return self.account_transaction_detail_rn
+
+    @admin.display(description='内容')
+    def content_format(self):
+        return format_item(self.content)
