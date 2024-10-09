@@ -34,7 +34,8 @@ def db_tables(request, conn_id):
 
                 tables = set()
                 for row in cursor.fetchall():
-                    table_name = partition_table_name_suffix_pattern.sub('', row['tablename'])
+                    # table_name = partition_table_name_suffix_pattern.sub('', row['tablename'])
+                    table_name = row['tablename']
                     if pg_prefix_pattern.search(table_name):
                         continue
                     if Table.objects.filter(conn=db_conn, name=table_name).exists():
