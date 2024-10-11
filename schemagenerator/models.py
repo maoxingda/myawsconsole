@@ -85,7 +85,7 @@ class Task(models.Model):
     class Meta:
         verbose_name        = '任务'
         verbose_name_plural = '任务'
-        ordering            = ('name', )
+        ordering            = ('-id', )
 
     class StatusEnum(models.TextChoices):
         CREATED   = 'created'  , '已创建'

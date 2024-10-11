@@ -229,6 +229,10 @@ def routineload_refresh(request):
     return redirect(reverse('admin:doris_routineload_changelist'))
 
 
+def pause_routine_load(routine_load: models.RoutineLoad):
+    execute_sql(f'pause routine load for {routine_load.name}', TargetDatabase.DORIS, doris_db=routine_load.db.name)
+
+
 def resume_routine_load(routine_load: models.RoutineLoad):
     execute_sql(f'resume routine load for {routine_load.name}', TargetDatabase.DORIS, doris_db=routine_load.db.name)
 

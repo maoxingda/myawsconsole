@@ -43,17 +43,24 @@ class RoutineLoadAdmin(admin.ModelAdmin):
         'html_actions',
     )
     actions = (
+        'batch_pause_routine_load',
         'batch_resume_routine_load',
         'batch_recreate_routine_load',
     )
 
-    @admin.display(description='恢复 例行加载任务')
+    @admin.display(description='暂停所选的 例行加载任务')
+    def batch_pause_routine_load(self, _, queryset):
+        from doris.views import pause_routine_load
+        for routine_load in queryset:
+            pause_routine_load(routine_load)
+
+    @admin.display(description='恢复所选的 例行加载任务')
     def batch_resume_routine_load(self, _, queryset):
         from doris.views import resume_routine_load
         for routine_load in queryset:
             resume_routine_load(routine_load)
 
-    @admin.display(description='重建 例行加载任务')
+    @admin.display(description='重建所选的 例行加载任务')
     def batch_recreate_routine_load(self, _, queryset):
         from doris.views import recreate_routine_load
         for routine_load in queryset:
