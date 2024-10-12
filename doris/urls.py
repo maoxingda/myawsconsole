@@ -14,4 +14,6 @@ urlpatterns = [
     path('routineload/refresh/'            , views.routineload_refresh        , name = 'routineload_refresh'),
     path('routineload/<int:pk>/resume/'    , views.routineload_resume         , name = 'routineload_resume'),
     path('routineload/<int:pk>/recreate/'  , views.routineload_recreate       , name = 'routineload_recreate'),
+
+    path('api/db/table/select/test/', views.test_table_select, name = 'test_table_select'),
 ]

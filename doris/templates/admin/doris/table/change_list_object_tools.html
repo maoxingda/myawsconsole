@@ -2,5 +2,6 @@
 
 {% block object-tools-items %}
     <li><a href="{% url 'doris:refresh_table_list' %}">刷新列表</a></li>
+    <li><a href="{% url 'doris:test_table_select' %}">测试表是否可查询</a></li>
     {{ block.super }}
 {% endblock %}

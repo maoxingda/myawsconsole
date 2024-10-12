@@ -90,6 +90,7 @@ class RoutineLoad(models.Model):
 
     name = models.CharField(max_length=32, verbose_name='名称')
     state = models.CharField(max_length=32, verbose_name='状态')
+    lag = models.BigIntegerField(verbose_name='延迟', default=0)
 
     db = models.ForeignKey(DorisDb, verbose_name='数据库', null=True, on_delete=models.SET_NULL)
 

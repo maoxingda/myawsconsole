@@ -34,10 +34,12 @@ class RoutineLoadAdmin(admin.ModelAdmin):
     )
     list_display = (
         '__str__',
+        'lag',
         'state',
     )
     list_filter = (
         'state',
+        'lag',
     )
     readonly_fields = (
         'html_actions',

@@ -215,11 +215,15 @@ def routineload_refresh(request):
         for rl in routine_loads:
             if rl['State'] == 'STOPPED':
                 continue
+            sum_lag = 0
+            for _, v in json.loads(rl['Lag']).items():
+                sum_lag += int(v)
             rls.append(
                 models.RoutineLoad(
                     name=rl['Name'],
                     state=rl['State'],
                     db=db,
+                    lag=sum_lag,
                 )
             )
 
@@ -269,3 +273,39 @@ def routineload_recreate(request, pk):
     recreate_routine_load(routine_load)
 
     return redirect(reverse('admin:doris_routineload_change', args=(routine_load.id,)))
+
+
+def test_table_select(request):
+    sql = 'show databases'
+    dbs = execute_sql(sql, TargetDatabase.DORIS, ret_val=True)
+    file_name = 'test_table_select.sql'
+    with open(file_name, 'w') as f:
+        for db in dbs:
+            dbname = db['Database']
+            if dbname in (
+                'doris_audit_db__',
+                'information_schema',
+                'test',
+            ) or dbname.startswith('rs_'):
+                continue
+            # print(dbname)
+            sql = f'show tables from {dbname}'
+            tbls = execute_sql(sql, TargetDatabase.DORIS, ret_val=True, dictionary=False)
+            # print(tbls)
+            for tbl in tbls:
+                tbl_name = tbl[0]
+                sql = f'select * from {dbname}.{tbl_name} limit 3;\n'
+                f.write(sql)
+                # print(sql)
+                # print(execute_sql(sql, TargetDatabase.DORIS, ret_val=False))
+
+    import os
+    # import subprocess
+
+    cwd = os.getcwd()
+
+    # subprocess.run(f'ls -ltr {cwd}', shell=True)
+
+    print(f'scp pdaf:{cwd}/{file_name} /tmp/{file_name} && goland /tmp/{file_name}')
+
+    return redirect(reverse('admin:doris_table_changelist'))

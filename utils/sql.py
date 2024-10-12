@@ -9,7 +9,13 @@ class TargetDatabase(Enum):
     REDSHIFT = 1
 
 
-def execute_sql(sql: str, tgt_db: TargetDatabase = TargetDatabase.REDSHIFT, ret_val: bool = False, doris_db='test'):
+def execute_sql(
+        sql: str,
+        tgt_db: TargetDatabase = TargetDatabase.REDSHIFT,
+        ret_val: bool = False,
+        doris_db='test',
+        dictionary=True
+):
     if tgt_db == TargetDatabase.REDSHIFT:
         dns = os.getenv('dns')
         with psycopg2.connect(dns) as conn:
@@ -28,7 +34,7 @@ def execute_sql(sql: str, tgt_db: TargetDatabase = TargetDatabase.REDSHIFT, ret_
             'database': doris_db,
         }
         conn = mysql.connector.connect(**config)
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(dictionary=dictionary)
 
         print(sql)
         print('-' * 128)
