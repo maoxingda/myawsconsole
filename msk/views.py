@@ -72,6 +72,10 @@ def topic_message_out_of_order_upbound(request, pk):
                     execute_sql(f'insert into msk.{table_name} (key, ts) values {",".join(event_ts)}',
                                 tgt_db=TargetDatabase.REDSHIFT)
                     event_ts.clear()
+                    elapsed = datetime.now() - start
+                    elapsed = int(elapsed.total_seconds()) - 28800
+                    elapsed = datetime.fromtimestamp(elapsed).strftime("%H:%M:%S")
+                    print(f'msg_ts: {datetime.fromtimestamp(message.timestamp / 1000)}, 耗时：{elapsed}')
                 if message.timestamp >= end_timestamp:
                     break
             if event_ts:
@@ -88,16 +92,16 @@ def topic_message_out_of_order_upbound(request, pk):
             sql = textwrap.dedent(f"""
                 with
                     t1 as (
-                        select ts, max(ts) over(
+                        select id, ts, max(ts) over(
                             order by id 
                             rows between unbounded preceding and current row
                         ) as max_ts
                         from msk.{table_name}
                     )
-                select max_ts - ts as diff_ts
+                select max_ts - ts as diff_ts, id
                 from t1
                 where diff_ts > 0
-                group by diff_ts
+                -- group by diff_ts
                 order by diff_ts desc
                 limit {topic.topn}
             """)
@@ -105,7 +109,7 @@ def topic_message_out_of_order_upbound(request, pk):
         rows = execute_sql(sql, tgt_db=TargetDatabase.REDSHIFT, ret_val=True)
 
         for row in rows:
-            messages.info(request, f'{row[0]}')
+            messages.info(request, f'{str(row[0]):<4}{row[1]}')
     elif action == 'key-out-of-order-upbound':
         if topic.has_data:
             sql = textwrap.dedent(f"""
@@ -128,7 +132,7 @@ def topic_message_out_of_order_upbound(request, pk):
             rows = execute_sql(sql, tgt_db=TargetDatabase.REDSHIFT, ret_val=True)
 
             for row in rows:
-                messages.info(request, f'{row[0]}')
+                messages.info(request, f'{row[0]}{row[1]}')
 
             if len(rows) == 0:
                 messages.info(request, f'键粒度没有消息乱序')
