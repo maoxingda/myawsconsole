@@ -47,7 +47,9 @@ class RoutineLoadAdmin(admin.ModelAdmin):
     actions = (
         'batch_pause_routine_load',
         'batch_resume_routine_load',
+        'batch_stop_routine_load',
         'batch_recreate_routine_load',
+        'batch_print_routine_load',
     )
 
     @admin.display(description='暂停所选的 例行加载任务')
@@ -67,3 +69,22 @@ class RoutineLoadAdmin(admin.ModelAdmin):
         from doris.views import recreate_routine_load
         for routine_load in queryset:
             recreate_routine_load(routine_load)
+
+    @admin.display(description='停止所选的 例行加载任务')
+    def batch_stop_routine_load(self, _, queryset):
+        from doris.views import stop_routine_load
+        for routine_load in queryset:
+            stop_routine_load(routine_load)
+
+    @admin.display(description='打印所选的 例行加载任务')
+    def batch_print_routine_load(self, _, queryset):
+        from doris.views import print_routine_load
+        sqls = []
+        for routine_load in queryset:
+            sqls.append(f'use {routine_load.db.name};')
+            sqls.append(print_routine_load(routine_load))
+        with open('/tmp/routine_load.sql', 'w') as f:
+            f.write('\n'.join(sqls))
+
+        print(f'scp pdaf:/tmp/routine_load.sql /tmp/routine_load.sql && goland /tmp/routine_load.sql')
+

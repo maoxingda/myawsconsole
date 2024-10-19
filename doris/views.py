@@ -241,6 +241,10 @@ def resume_routine_load(routine_load: models.RoutineLoad):
     execute_sql(f'resume routine load for {routine_load.name}', TargetDatabase.DORIS, doris_db=routine_load.db.name)
 
 
+def stop_routine_load(routine_load: models.RoutineLoad):
+    execute_sql(f'stop routine load for {routine_load.name}', TargetDatabase.DORIS, doris_db=routine_load.db.name)
+
+
 def recreate_routine_load(routine_load: models.RoutineLoad):
     def get_routine_load_live_state():
         state = execute_sql(
@@ -257,6 +261,23 @@ def recreate_routine_load(routine_load: models.RoutineLoad):
     sql = execute_sql(sql, TargetDatabase.DORIS, doris_db=routine_load.db.name, ret_val=True)[0]['CreateStmt']
     execute_sql(f'stop routine load for {routine_load.name}', TargetDatabase.DORIS, doris_db=routine_load.db.name)
     execute_sql(sql, TargetDatabase.DORIS, doris_db=routine_load.db.name)
+
+
+def print_routine_load(routine_load: models.RoutineLoad):
+    sql = f'show create routine load for {routine_load.name}'
+
+    sql = execute_sql(sql, TargetDatabase.DORIS, doris_db=routine_load.db.name, ret_val=True)[0]['CreateStmt']
+
+    sql = re.sub(r'"property.kafka_origin_default_offsets" = "[^"]+",\n', '', sql)
+    sql = re.sub(
+        r'"property.kafka_default_offsets" = "\d+",',
+        f'"property.kafka_default_offsets" = "OFFSET_END",',
+        sql,
+    )
+    sql = re.sub(r'"kafka_partitions" = "[^"]+",\n', '', sql)
+    sql = re.sub(r',\n"kafka_offsets" = "[^"]+"', '', sql)
+
+    return sql
 
 
 def routineload_resume(request, pk):
