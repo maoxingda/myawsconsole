@@ -8,3 +8,4 @@ mysql-connector-python==8.0.33
 djangorestframework==3.12.4
 pytz==2023.3
 pynamodb
+kafka-python

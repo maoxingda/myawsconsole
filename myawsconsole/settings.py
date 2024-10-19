@@ -47,7 +47,8 @@ INSTALLED_APPS = [
     'dms',
     'schemagenerator',
     'doris',
-    "dynamodb"
+    "dynamodb",
+    "msk",
 ]
 
 MIDDLEWARE = [
