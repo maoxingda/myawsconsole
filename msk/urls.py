@@ -9,4 +9,5 @@ urlpatterns = [
     path('topic/<int:pk>/message_out_of_order_upbound/', views.topic_message_out_of_order_upbound, name = 'topic_message_out_of_order_upbound'),
     path('topic/<int:pk>/message_count/'               , views.topic_message_count               , name = 'topic_message_count'),
     path('topic/<int:pk>/last_message/'                , views.topic_last_message                , name = 'topic_last_message'),
+    path('topic/<int:pk>/check_message_order/'         , views.check_message_order               , name = 'check_message_order'),
 ]

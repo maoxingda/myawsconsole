@@ -57,6 +57,7 @@ def topic_message_out_of_order_upbound(request, pk):
             consumer.assign([tp])
             consumer.seek(tp, offsets[tp].offset)
             print(f"Starting consumption from offset: {offsets[tp].offset}")
+            topic.start_offset = offsets[tp].offset
 
             has_data = False
             event_ts = []
@@ -183,5 +184,43 @@ def topic_last_message(request, pk):
             break  # 只消费最后一条消息
     else:
         messages.info(request, f'No messages in this partition.')
+
+    return redirect(reverse('admin:msk_topic_change', args=(pk,)))
+
+
+def check_message_order(request, pk):
+    topic = models.Topic.objects.get(pk=pk)
+    table_name = re.sub(r'\.|-', '_', topic.name)
+    # 创建 KafkaConsumer 实例
+    consumer = KafkaConsumer(
+        bootstrap_servers=['b-1.bi-rdw-kafka.6pqqfj.c3.kafka.cn-northwest-1.amazonaws.com.cn:9092',
+                           'b-5.bi-rdw-kafka.6pqqfj.c3.kafka.cn-northwest-1.amazonaws.com.cn:9092',
+                           'b-9.bi-rdw-kafka.6pqqfj.c3.kafka.cn-northwest-1.amazonaws.com.cn:9092'],
+        enable_auto_commit=False
+    )
+
+    # 定义主题和分区
+    partition = 0
+
+    # 创建 TopicPartition 对象
+    tp = TopicPartition(topic.name, partition)
+
+    # 获取最新的偏移量
+    consumer.assign([tp])
+    consumer.seek(tp, topic.start_offset)
+
+    sql = textwrap.dedent(f"""
+        select key from msk.{table_name} order by id
+    """)
+
+    rows = execute_sql(sql, tgt_db=TargetDatabase.REDSHIFT, ret_val=True)
+
+    for i, message in enumerate(consumer):
+        value = json.loads(message.value.decode('utf-8'))
+        if str(value[topic.key]) != rows[i][0]:
+            messages.error(request, f'{value[topic.key]} != {rows[i][0]}')
+            break
+        if i + 1 == len(rows):
+            break
 
     return redirect(reverse('admin:msk_topic_change', args=(pk,)))

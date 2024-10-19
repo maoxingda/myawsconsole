@@ -17,6 +17,7 @@ class Topic(models.Model):
     topn = models.IntegerField('TOP N', default=5)
     key = models.CharField('键', max_length=128, default='id')
     has_data = models.BooleanField('是否有数据', default=False, editable=False)
+    start_offset = models.BigIntegerField('开始offset', default=0, editable=False)
 
     def __str__(self):
         return self.name
@@ -39,5 +40,8 @@ class Topic(models.Model):
 
         url = reverse('msk:topic_message_out_of_order_upbound', args=(self.pk,))
         buttons.append(f'<a href="{url}?action=sync-data">同步数据</a>')
+
+        url = reverse('msk:check_message_order', args=(self.pk,))
+        buttons.append(f'<a href="{url}?action=sync-data">校验消息顺序</a>')
 
         return mark_safe('&emsp;&emsp;'.join(buttons))
