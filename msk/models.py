@@ -41,6 +41,9 @@ class Topic(models.Model):
         url = reverse('msk:topic_message_out_of_order_upbound', args=(self.pk,))
         buttons.append(f'<a href="{url}?action=sync-data">同步数据</a>')
 
+        url = reverse('msk:topic_message_out_of_order_upbound', args=(self.pk,))
+        buttons.append(f'<a href="{url}?action=sync-data-one-day">同步最近1天数据</a>')
+
         url = reverse('msk:check_message_order', args=(self.pk,))
         buttons.append(f'<a href="{url}?action=sync-data">校验消息顺序</a>')
 

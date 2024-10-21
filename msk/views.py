@@ -35,7 +35,7 @@ def topic_message_out_of_order_upbound(request, pk):
     topic = models.Topic.objects.get(pk=pk)
     table_name = re.sub(r'\.|-', '_', topic.name)
 
-    if action == 'sync-data':
+    if action == 'sync-data' or action == 'sync-data-one-day':
         consumer = KafkaConsumer(
             bootstrap_servers=['b-1.bi-rdw-kafka.6pqqfj.c3.kafka.cn-northwest-1.amazonaws.com.cn:9092',
                                'b-5.bi-rdw-kafka.6pqqfj.c3.kafka.cn-northwest-1.amazonaws.com.cn:9092',
@@ -48,8 +48,12 @@ def topic_message_out_of_order_upbound(request, pk):
         execute_sql(f'drop table if exists msk.{table_name}', tgt_db=TargetDatabase.REDSHIFT)
         execute_sql(f'create table msk.{table_name} (id bigint identity(1, 1), key varchar(255), ts bigint)', tgt_db=TargetDatabase.REDSHIFT)
 
-        start_timestamp = int(topic.start_time.timestamp()) * 1000
-        end_timestamp = int(topic.end_time.timestamp()) * 1000
+        if action == 'sync-data-one-day':
+            end_timestamp = int(datetime.now().timestamp()) * 1000
+            start_timestamp = end_timestamp - 24 * 3600 * 1000
+        else:
+            start_timestamp = int(topic.start_time.timestamp()) * 1000
+            end_timestamp = int(topic.end_time.timestamp()) * 1000
 
         offsets = consumer.offsets_for_times({tp: start_timestamp})
 
