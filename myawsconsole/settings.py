@@ -41,6 +41,7 @@ INSTALLED_APPS = [
 
     # 第三方应用
     'django_extensions',
+    'admin_extra_buttons',
 
     # 自己开发的应用
     'redshift',
