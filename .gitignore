@@ -9,3 +9,4 @@
 /.idea/
 /staticfiles/
 **/__pycache__/
+db.sqlite3
