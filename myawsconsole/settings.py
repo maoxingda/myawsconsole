@@ -32,7 +32,6 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
-    'django_admin_env_notice',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -42,7 +41,6 @@ INSTALLED_APPS = [
 
     # 第三方应用
     'django_extensions',
-    'admin_extra_buttons',
 
     # 自己开发的应用
     'redshift',
@@ -76,7 +74,6 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'django_admin_env_notice.context_processors.from_settings',
             ],
         },
     },
@@ -143,8 +140,3 @@ CSRF_TRUSTED_ORIGINS = [
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-ENVIRONMENT_NAME = "Production server"
-ENVIRONMENT_COLOR = "#FF2222"
-# ENVIRONMENT_ADMIN_SELECTOR = "grp-header"
-ENVIRONMENT_FLOAT = True
-ENVIRONMENT_TEXT_COLOR = "#00FF00"
