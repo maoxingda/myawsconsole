@@ -31,7 +31,7 @@ def execute_sql(
             'user': os.getenv('doris_user'),
             'password': os.getenv('password'),
             'host': os.getenv('doris_host'),
-            'port': os.getenv('doris_port'),
+            'port': int(os.getenv('doris_port')),
             'database': doris_db,
             'cursorclass': pymysql.cursors.DictCursor,
         }
