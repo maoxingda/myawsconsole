@@ -188,9 +188,7 @@ def query_columns(request, task_id):
     return redirect(reverse('admin:doris_s3loadtask_change', args=(load_task.id,)))
 
 
-def refresh_doris_db(request, task_id):
-    load_task = models.S3LoadTask.objects.get(pk=task_id)
-
+def refresh_doris_db(request):
     sql = f"show databases"
     rows = execute_sql(sql, TargetDatabase.DORIS, ret_val=True)
 
@@ -200,8 +198,6 @@ def refresh_doris_db(request, task_id):
     )
 
     messages.success(request, f'刷新数据库成功')
-
-    return redirect(reverse('admin:doris_s3loadtask_change', args=(load_task.id,)))
 
 
 def routineload_refresh(request):
@@ -230,7 +226,7 @@ def routineload_refresh(request):
     models.RoutineLoad.objects.all().delete()
     models.RoutineLoad.objects.bulk_create(rls)
 
-    return redirect(reverse('admin:doris_routineload_changelist'))
+    messages.success(request, f'刷新列表成功')
 
 
 def pause_routine_load(routine_load: models.RoutineLoad):
