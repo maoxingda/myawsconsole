@@ -36,7 +36,7 @@ def execute_sql(
             'cursorclass': pymysql.cursors.DictCursor,
         }
         conn = pymysql.connect(**config)
-        cursor = conn.cursor(dictionary=dictionary)
+        cursor = conn.cursor()
 
         print(sql)
         print('-' * 128)
