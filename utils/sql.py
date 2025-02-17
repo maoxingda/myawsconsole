@@ -1,6 +1,7 @@
 import os
 from enum import Enum
-import mysql.connector
+# import mysql.connector
+import pymysql
 import psycopg2
 
 
@@ -32,8 +33,9 @@ def execute_sql(
             'host': os.getenv('doris_host'),
             'port': os.getenv('doris_port'),
             'database': doris_db,
+            'cursorclass': pymysql.cursors.DictCursor,
         }
-        conn = mysql.connector.connect(**config)
+        conn = pymysql.connect(**config)
         cursor = conn.cursor(dictionary=dictionary)
 
         print(sql)
