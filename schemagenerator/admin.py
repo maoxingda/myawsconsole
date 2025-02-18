@@ -53,7 +53,8 @@ class DbConnAdmin(ExtraButtonsMixin):
                     self.message_user(request, content)
 
     def save_model(self, request, obj: DbConn, form, change):
-        if os.getlogin() == 'root':
+        import pwd
+        if pwd.getpwuid(os.getuid())[0] != 'ec2-user':
             obj.s3_path = f's3://bi-data-store/realtime-cdc/{obj.name}/{obj.schema}/'
         else:
             obj.s3_path = f's3://bi-data-lake/realtime-cdc/{obj.name}/{obj.schema}/'
