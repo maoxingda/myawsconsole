@@ -5,8 +5,9 @@ import boto3
 import botocore.exceptions
 from django.conf import settings
 from django.http import JsonResponse
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse
+from django.contrib import messages
 
 from dms.models import Task, Endpoint, Table
 
@@ -129,3 +130,55 @@ def download_table_mapping(request, task_id):
         'name': task.name,
         'table_mappings': json.dumps(task.table_mappings, indent=2)
     })
+
+
+def stop_then_resume_task(request, task_id):
+    task = get_object_or_404(Task, pk=task_id)
+    client = boto3.client('dms', region_name='cn-northwest-1')
+    response = client.describe_replication_tasks(
+        Filters=[
+            {
+                'Name': 'replication-task-arn',
+                'Values': [
+                    task.arn,
+                ]
+            },
+        ],
+        WithoutSettings=True,
+    )
+    assert response['ResponseMetadata']['HTTPStatusCode'] == 200
+    assert len(response['ReplicationTasks']) == 1
+    status = response['ReplicationTasks'][0]['Status']
+    if 'running' == status:
+        print(f'stopping task: {task.name}')
+        client.stop_replication_task(
+            ReplicationTaskArn=task.arn,
+        )
+        client.get_waiter('replication_task_stopped').wait(
+            Filters=[
+                {
+                    'Name': 'replication-task-arn',
+                    'Values': [
+                        task.arn,
+                    ]
+                },
+            ],
+            WithoutSettings=True,
+        )
+        print(f'resuming task: {task.name}')
+        client.start_replication_task(
+            ReplicationTaskArn=task.arn,
+            StartReplicationTaskType='resume-processing',
+        )
+        client.get_waiter('replication_task_running').wait(
+            Filters=[
+                {
+                    'Name': 'replication-task-arn',
+                    'Values': [
+                        task.arn,
+                    ]
+                },
+            ],
+            WithoutSettings=True,
+        )
+        messages.info(request, f'任务 {task.name} 已停止并恢复成功')
