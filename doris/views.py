@@ -16,6 +16,7 @@ from django.utils.safestring import mark_safe
 from doris import models
 from redshift.util.corp_wechat import send_message
 from utils.sql import execute_sql, TargetDatabase
+from utils.http import HttpResponseRedirectToReferrer
 
 
 def start_s3_load_task(request, task_id):
@@ -199,6 +200,8 @@ def refresh_doris_db(request):
 
     messages.success(request, f'刷新数据库成功')
 
+    return HttpResponseRedirectToReferrer(request)
+
 
 def routineload_refresh(request):
     rls = []
@@ -227,6 +230,8 @@ def routineload_refresh(request):
     models.RoutineLoad.objects.bulk_create(rls)
 
     messages.success(request, f'刷新列表成功')
+
+    return HttpResponseRedirectToReferrer(request)
 
 
 def pause_routine_load(routine_load: models.RoutineLoad):

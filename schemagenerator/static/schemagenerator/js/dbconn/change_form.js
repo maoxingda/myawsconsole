@@ -14,5 +14,7 @@
         django.jQuery('#id_name').on('keyup', function () {
             table_name_prefix.val(`init_${django.jQuery(this).val()}_`);
         });
+
+        django.jQuery('#id_password').attr('type', 'password');
     });
 }

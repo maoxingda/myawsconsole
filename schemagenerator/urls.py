@@ -13,5 +13,6 @@ urlpatterns = [
     path('task/<int:task_id>/enable_vue_js/'        , views.enable_vue_js        , name = 'enable_vue_js'),
     path('task/<int:task_id>/download_sql/'         , views.download_sql         , name = 'download_sql'),
     path('task/<int:task_id>/create_ddl_sql/'       , views.create_ddl_sql       , name = 'create_ddl_sql'),
+    path('task/<int:pk>/slot/'                      , views.slot                 , name = 'slot'),
     path('task/<int:task_id>/'                      , views.get_task             , name = 'get_task'),
 ]

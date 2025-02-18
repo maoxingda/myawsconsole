@@ -10,6 +10,7 @@ from django.urls import reverse
 from django.contrib import messages
 
 from dms.models import Task, Endpoint, Table
+from utils.http import HttpResponseRedirectToReferrer
 
 
 def refresh_tasks(request):
@@ -182,3 +183,5 @@ def stop_then_resume_task(request, task_id):
             WithoutSettings=True,
         )
         messages.info(request, f'任务 {task.name} 已停止并恢复成功')
+
+    return HttpResponseRedirectToReferrer(request)

@@ -1,8 +1,6 @@
 from django.contrib import admin
 from doris import models
 
-from admin_extra_buttons.api import ExtraButtonsMixin, button
-
 from . import views
 
 
@@ -32,7 +30,7 @@ class TableAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.RoutineLoad)
-class RoutineLoadAdmin(ExtraButtonsMixin):
+class RoutineLoadAdmin(admin.ModelAdmin):
     search_fields = (
         'name',
     )
@@ -55,14 +53,6 @@ class RoutineLoadAdmin(ExtraButtonsMixin):
         'batch_recreate_routine_load',
         'batch_print_routine_load',
     )
-
-    @button(label='刷新列表')
-    def refresh_routine_load_changelist(self, request):
-        views.routineload_refresh(request)
-
-    @button(label='刷新数据库')
-    def refresh_databases(self, request):
-        views.refresh_doris_db(request)
 
     @admin.display(description='暂停所选的 例行加载任务')
     def batch_pause_routine_load(self, _, queryset):

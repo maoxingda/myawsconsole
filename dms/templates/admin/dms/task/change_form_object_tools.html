@@ -2,6 +2,7 @@
 {% load static %}
 
 {% block object-tools-items %}
+    <li><a id="id_stop_then_resume_task" href="{% url 'dms:stop_then_resume_task' object_id %}">恢复</a></li>
     <li>
         <a id="id_download_table_mappings" href="#" onclick="return false;"
            @click="download_table_mappings('{% url 'dms:download_table_mapping' object_id %}')">下载表映射</a>

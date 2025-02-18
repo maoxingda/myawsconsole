@@ -15,10 +15,12 @@ from django.http import JsonResponse
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+from django.template import loader
 from psycopg2 import extras
 
 from schemagenerator.models import DbConn, Table, Task
 from schemagenerator.serializers import TaskSerializer
+from utils.http import HttpResponseRedirectToReferrer
 
 
 def db_tables(request, conn_id):
@@ -308,3 +310,16 @@ def enable_vue_js(request, task_id):
         messages.success(request, '成功禁用Vue.js')
 
     return redirect(task)
+
+
+def slot(request, pk):
+    dbconn = DbConn.objects.get(pk=pk)
+    if dbconn.db_type == DbConn.DbType.POSTGRESQL.value:
+        with psycopg2.connect(dbconn.server_address()) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    f"select database, active, pg_size_pretty( pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn) ), slot_name as lag from pg_replication_slots order by 1")
+                content = loader.render_to_string('slot.html', {'cursor': cursor}, request)
+                messages.info(request, content)
+
+    return HttpResponseRedirectToReferrer(request)

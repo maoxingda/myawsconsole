@@ -7,15 +7,13 @@ from django.contrib import admin
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
-from admin_extra_buttons.api import ExtraButtonsMixin, button
-
 from common.admin import CommonAdmin
 from dms.models import Task, Endpoint, Table
 from dms.views import refresh_endpoints, refresh_tasks, stop_then_resume_task
 
 
 @admin.register(Task)
-class TaskAdmin(ExtraButtonsMixin, CommonAdmin):
+class TaskAdmin(CommonAdmin):
     actions = ()
     search_fields = ('name', 'table_name', 'source_endpoint_arn',)
     list_display = ('__str__', 'html_actions',)
@@ -24,10 +22,6 @@ class TaskAdmin(ExtraButtonsMixin, CommonAdmin):
     list_filter = ('table_name',)
 
     sync_schema_task_pattern = re.compile(rf'-{settings.REPLICATION_TASK_SUFFIX}$')
-
-    @button(label='恢复')
-    def stop_then_resume(self, request, pk):
-        stop_then_resume_task(request, pk)
 
     def has_change_permission(self, request, obj=None):
         return False
