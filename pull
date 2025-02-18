@@ -1,1 +1,1 @@
-git add -A && git restore --staged .
+git add -A && git pull && git restore --staged .
