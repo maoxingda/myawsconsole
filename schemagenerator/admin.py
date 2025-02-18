@@ -9,6 +9,7 @@ from django.template import loader
 from admin_extra_buttons.api import ExtraButtonsMixin, button
 
 from schemagenerator.models import DbConn, Table, Task, TaskTable
+from utils import sql
 
 
 def get_search_results_ajax(queryset, key, urlparams):
@@ -43,8 +44,6 @@ class DbConnAdmin(ExtraButtonsMixin):
 
     @button(label='复制槽')
     def slot(self, request, pk):
-        from utils import sql
-
         dbconn = DbConn.objects.get(pk=pk)
         if dbconn.db_type == DbConn.DbType.POSTGRESQL.value:
             with psycopg2.connect(dbconn.server_address()) as conn:
