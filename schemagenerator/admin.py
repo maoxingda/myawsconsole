@@ -1,6 +1,8 @@
 import os
 import urllib
 
+import psycopg2
+
 from django.contrib import admin
 from django.template import loader
 
@@ -42,7 +44,6 @@ class DbConnAdmin(ExtraButtonsMixin):
     @button(label='复制槽')
     def slot(self, request, pk):
         from utils import sql
-        import psycopg2
 
         dbconn = DbConn.objects.get(pk=pk)
         if dbconn.db_type == DbConn.DbType.POSTGRESQL.value:
