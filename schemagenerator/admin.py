@@ -48,7 +48,7 @@ class DbConnAdmin(ExtraButtonsMixin):
         if dbconn.db_type == DbConn.DbType.POSTGRESQL.value:
             with psycopg2.connect(dbconn.server_address()) as conn:
                 with conn.cursor() as cursor:
-                    cursor.execute(f"select database, active, pg_size_pretty( pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn) ), slot_name as lag from pg_replication_slots")
+                    cursor.execute(f"select database, active, pg_size_pretty( pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn) ), slot_name as lag from pg_replication_slots order by 1")
                     content = loader.render_to_string('slot.html', {'cursor': cursor}, request)
                     self.message_user(request, content)
 
