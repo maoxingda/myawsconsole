@@ -2,6 +2,9 @@ import os
 import urllib
 
 from django.contrib import admin
+from django.template import loader
+
+from admin_extra_buttons.api import ExtraButtonsMixin, button
 
 from schemagenerator.models import DbConn, Table, Task, TaskTable
 
@@ -28,13 +31,26 @@ class AjaxModelAdmin(admin.ModelAdmin):
 
 
 @admin.register(DbConn)
-class DbConnAdmin(admin.ModelAdmin):
+class DbConnAdmin(ExtraButtonsMixin):
     search_fields = ('name', )
     list_display = ('name', 'html_actions', )
     radio_fields = {
         'db_type': admin.HORIZONTAL,
     }
     view_on_site = False
+
+    @button(label='复制槽')
+    def slot(self, request, pk):
+        from utils import sql
+        import psycopg2
+
+        dbconn = DbConn.objects.get(pk=pk)
+        if dbconn.db_type == DbConn.DbType.POSTGRESQL.value:
+            with psycopg2.connect(dbconn.server_address()) as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(f"select database, active, pg_size_pretty( pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn) ), slot_name as lag from pg_replication_slots")
+                    content = loader.render_to_string('slot.html', {'cursor': cursor}, request)
+                    self.message_user(request, content)
 
     def save_model(self, request, obj: DbConn, form, change):
         if os.getlogin() == 'root':
