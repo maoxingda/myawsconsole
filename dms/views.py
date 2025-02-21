@@ -1,4 +1,5 @@
 import json
+import time
 import re
 
 import boto3
@@ -189,6 +190,7 @@ def stop_then_resume_task(request, task_id):
 
 
 def full_refresh_tasks(request):
+    start = time.time()
     client = boto3.client('dms', region_name='cn-northwest-1')
 
     endpoints_paginator = client.get_paginator('describe_endpoints')
@@ -261,7 +263,9 @@ def full_refresh_tasks(request):
     Table.objects.all().delete()
     Table.objects.bulk_create(tables)
 
-    messages.info(request, '刷新列表成功')
+    duration = time.time() - start
+
+    messages.info(request, f'刷新列表成功，耗时：{int(duration)} 秒')
 
     return HttpResponseRedirectToReferrer(request)
 
