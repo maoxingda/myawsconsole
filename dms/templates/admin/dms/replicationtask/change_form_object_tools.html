@@ -1,0 +1,7 @@
+{% extends 'admin/change_form_object_tools.html' %}
+{% load static %}
+
+{% block object-tools-items %}
+    <li><a id="id_stop_then_resume_task" href="{% url 'dms:stop_then_resume_task' object_id %}">恢复</a></li>
+    {{ block.super }}
+{% endblock %}

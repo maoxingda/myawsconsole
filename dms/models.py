@@ -34,7 +34,7 @@ class Table(models.Model):
     name = models.CharField('名称', max_length=255)
     schema = models.CharField(max_length=32)
     task_name = models.CharField('任务名称', max_length=255, null=True)
-    task = models.ForeignKey(to=Task, on_delete=models.CASCADE, related_name='tables', verbose_name='任务', null=True)
+    task = models.ForeignKey(to='ReplicationTask', on_delete=models.CASCADE, related_name='tables', verbose_name='任务', null=True)
 
     def __str__(self):
         return self.name
@@ -77,6 +77,7 @@ class ReplicationTask(models.Model):
     target_endpoint                = models.ForeignKey('ReplicationEndpoint', null=True, on_delete=models.SET_NULL, related_name='target_replication_tasks')
     status                         = models.CharField(max_length=50)
     table_mappings                 = models.JSONField()
+    aws_console_url                = models.URLField(max_length=255)
 
     def __str__(self):
         return self.replication_task_identifier
@@ -84,8 +85,8 @@ class ReplicationTask(models.Model):
 
 class ReplicationEndpoint(models.Model):
     class Meta:
-        verbose_name = '端点v2'
-        verbose_name_plural = '端点v2'
+        verbose_name = '端点'
+        verbose_name_plural = '端点'
 
     endpoint_arn        = models.CharField(max_length=255, unique=True)
     endpoint_identifier = models.CharField(max_length=255, unique=True)

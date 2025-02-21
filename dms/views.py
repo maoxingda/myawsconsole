@@ -135,14 +135,14 @@ def download_table_mapping(request, task_id):
 
 
 def stop_then_resume_task(request, task_id):
-    task = get_object_or_404(Task, pk=task_id)
+    task = get_object_or_404(ReplicationTask, pk=task_id)
     client = boto3.client('dms', region_name='cn-northwest-1')
     response = client.describe_replication_tasks(
         Filters=[
             {
                 'Name': 'replication-task-arn',
                 'Values': [
-                    task.arn,
+                    task.replication_task_arn,
                 ]
             },
         ],
@@ -152,24 +152,24 @@ def stop_then_resume_task(request, task_id):
     assert len(response['ReplicationTasks']) == 1
     status = response['ReplicationTasks'][0]['Status']
     if 'running' == status:
-        print(f'stopping task: {task.name}')
+        print(f'stopping task: {task.replication_task_identifier}')
         client.stop_replication_task(
-            ReplicationTaskArn=task.arn,
+            ReplicationTaskArn=task.replication_task_arn,
         )
         client.get_waiter('replication_task_stopped').wait(
             Filters=[
                 {
                     'Name': 'replication-task-arn',
                     'Values': [
-                        task.arn,
+                        task.replication_task_arn,
                     ]
                 },
             ],
             WithoutSettings=True,
         )
-        print(f'resuming task: {task.name}')
+        print(f'resuming task: {task.replication_task_identifier}')
         client.start_replication_task(
-            ReplicationTaskArn=task.arn,
+            ReplicationTaskArn=task.replication_task_arn,
             StartReplicationTaskType='resume-processing',
         )
         client.get_waiter('replication_task_running').wait(
@@ -177,13 +177,13 @@ def stop_then_resume_task(request, task_id):
                 {
                     'Name': 'replication-task-arn',
                     'Values': [
-                        task.arn,
+                        task.replication_task_arn,
                     ]
                 },
             ],
             WithoutSettings=True,
         )
-        messages.info(request, f'任务 {task.name} 已停止并恢复成功')
+        messages.info(request, f'任务 {task.replication_task_identifier} 已停止并恢复成功')
 
     return HttpResponseRedirectToReferrer(request)
 
@@ -214,6 +214,7 @@ def full_refresh_tasks(request):
 
     tasks_paginator = client.get_paginator('describe_replication_tasks')
 
+    stats = []
     tasks = []
     for tasks_page in tasks_paginator.paginate():
         for task in tasks_page['ReplicationTasks']:
@@ -232,10 +233,40 @@ def full_refresh_tasks(request):
                     target_endpoint=ReplicationEndpoint.objects.get(endpoint_arn=task['TargetEndpointArn']),
                     status=task['Status'],
                     table_mappings=json.loads(task['TableMappings']),
+                    aws_console_url=f"{settings.AWS_DMS_URL}#taskDetails/{task['ReplicationTaskIdentifier']}",
                 )
             )
+
+            stats_paginator = client.get_paginator('describe_table_statistics')
+            for stats_page in stats_paginator.paginate(ReplicationTaskArn=task['ReplicationTaskArn']):
+                for stat in stats_page['TableStatistics']:
+                    stats.append({
+                        'name': stat['TableName'],
+                        'schema': stat['SchemaName'],
+                        'task_name': task['ReplicationTaskIdentifier'],
+                    })
 
     ReplicationTask.objects.all().delete()
     ReplicationTask.objects.bulk_create(tasks)
 
+    tables = []
+    for stat in stats:
+        tables.append(Table(
+            name=stat['name'],
+            schema=stat['schema'],
+            task_name=stat['task_name'],
+            task=ReplicationTask.objects.get(replication_task_identifier=stat['task_name']),
+        ))
+
+    Table.objects.all().delete()
+    Table.objects.bulk_create(tables)
+
+    messages.info(request, '刷新列表成功')
+
     return HttpResponseRedirectToReferrer(request)
+
+
+def task_tables(request, task_id):
+    task = ReplicationTask.objects.get(id=task_id)
+
+    return redirect(reverse('admin:dms_table_changelist') + f'?q={task.replication_task_identifier}')

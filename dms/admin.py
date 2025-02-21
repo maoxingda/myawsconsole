@@ -12,7 +12,7 @@ from dms.models import Task, Endpoint, Table, ReplicationTask, ReplicationEndpoi
 from dms.views import refresh_endpoints, refresh_tasks, stop_then_resume_task
 
 
-@admin.register(Task)
+# @admin.register(Task)
 class TaskAdmin(CommonAdmin):
     actions = ()
     search_fields = ('name', 'table_name', 'source_endpoint_arn',)
@@ -74,7 +74,7 @@ class TableAdmin(admin.ModelAdmin):
     search_fields = ('name', 'task_name',)
     list_display = ('name', 'schema', 'task_name',)
     list_filter = ('task_name', 'schema',)
-    exclude = ('task',)
+    exclude = ('task_name',)
 
     def has_change_permission(self, request, obj=None):
         return False
@@ -83,7 +83,7 @@ class TableAdmin(admin.ModelAdmin):
         return False
 
 
-@admin.register(Endpoint)
+# @admin.register(Endpoint)
 class EndpointAdmin(CommonAdmin):
     search_fields = ('server_name', 'identifier')
     list_display = ('__str__', 'database', 'html_actions',)
@@ -108,6 +108,8 @@ class EndpointAdmin(CommonAdmin):
 
 @admin.register(ReplicationTask)
 class ReplicationTaskAdmin(admin.ModelAdmin):
+    sync_schema_task_pattern = re.compile(rf'-{settings.REPLICATION_TASK_SUFFIX}$')
+
     search_fields = (
         'replication_task_identifier',
     )
@@ -117,10 +119,11 @@ class ReplicationTaskAdmin(admin.ModelAdmin):
     )
     list_display = (
         'replication_task_identifier',
-        'migration_type',
-        'status',
-        'source_endpoint',
-        'target_endpoint',
+        'html_actions',
+        # 'migration_type',
+        # 'status',
+        # 'source_endpoint',
+        # 'target_endpoint',
     )
     list_filter = (
         'status',
@@ -131,6 +134,20 @@ class ReplicationTaskAdmin(admin.ModelAdmin):
         'source_endpoint',
         'target_endpoint',
     )
+
+    @admin.display(description='操作')
+    def html_actions(self, obj):
+        buttons = [
+            f'<a href="{reverse("dms:task_tables", args=(obj.id,))}">同步的表</a>',
+            f'<a href="{obj.aws_console_url}">AWS控制台</a>',
+        ]
+
+        if self.sync_schema_task_pattern.search(obj.replication_task_identifier):
+            url = reverse(f'admin:{obj._meta.app_label}_{obj._meta.model_name}_delete', args=(obj.id,))
+            buttons.append(f'<a href="{url}">删除</a>')
+            buttons.append(f'🚒')
+
+        return mark_safe(' / '.join(buttons))
 
 
 @admin.register(ReplicationEndpoint)
