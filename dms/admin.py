@@ -71,7 +71,10 @@ class TaskAdmin(CommonAdmin):
 
 @admin.register(Table)
 class TableAdmin(admin.ModelAdmin):
-    search_fields = ('name', 'task_name',)
+    def get_search_results(self, request, queryset, search_term):
+        return super().get_search_results(request, queryset, search_term)
+
+    search_fields = ('=name', '=task_name',)
     list_display = ('name', 'schema', 'task_name',)
     list_filter = ('task_name', 'schema',)
     exclude = ('task_name',)
