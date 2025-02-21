@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 from common.admin import CommonAdmin
-from dms.models import Task, Endpoint, Table
+from dms.models import Task, Endpoint, Table, ReplicationTask, ReplicationEndpoint
 from dms.views import refresh_endpoints, refresh_tasks, stop_then_resume_task
 
 
@@ -85,7 +85,7 @@ class TableAdmin(admin.ModelAdmin):
 
 @admin.register(Endpoint)
 class EndpointAdmin(CommonAdmin):
-    search_fields = ('server_name',)
+    search_fields = ('server_name', 'identifier')
     list_display = ('__str__', 'database', 'html_actions',)
     fields = ('server_name',)
     actions = ()
@@ -104,3 +104,52 @@ class EndpointAdmin(CommonAdmin):
 
     def my_handler(self, request):
         return refresh_endpoints(request)
+
+
+@admin.register(ReplicationTask)
+class ReplicationTaskAdmin(admin.ModelAdmin):
+    search_fields = (
+        'replication_task_identifier',
+    )
+    date_hierarchy = 'replication_task_creation_date'
+    ordering = (
+        'replication_task_identifier',
+    )
+    list_display = (
+        'replication_task_identifier',
+        'migration_type',
+        'status',
+        'source_endpoint',
+        'target_endpoint',
+    )
+    list_filter = (
+        'status',
+        'migration_type',
+        'replication_instance_arn',
+    )
+    readonly_fields = (
+        'source_endpoint',
+        'target_endpoint',
+    )
+
+
+@admin.register(ReplicationEndpoint)
+class ReplicationEndpointAdmin(admin.ModelAdmin):
+    search_fields = (
+        'endpoint_identifier',
+        'database_name',
+        'server_name',
+    )
+    ordering = (
+        'endpoint_identifier',
+    )
+    list_display = (
+        'endpoint_identifier',
+        'endpoint_type',
+        'database_name',
+        'engine_display_name',
+    )
+    list_filter = (
+        'endpoint_type',
+        'engine_name',
+    )

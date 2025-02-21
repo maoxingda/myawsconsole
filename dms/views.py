@@ -8,8 +8,9 @@ from django.http import JsonResponse
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib import messages
+from django.db import transaction
 
-from dms.models import Task, Endpoint, Table
+from dms.models import Task, Endpoint, Table, ReplicationTask, ReplicationEndpoint
 from utils.http import HttpResponseRedirectToReferrer
 
 
@@ -183,5 +184,58 @@ def stop_then_resume_task(request, task_id):
             WithoutSettings=True,
         )
         messages.info(request, f'任务 {task.name} 已停止并恢复成功')
+
+    return HttpResponseRedirectToReferrer(request)
+
+
+def full_refresh_tasks(request):
+    client = boto3.client('dms', region_name='cn-northwest-1')
+
+    endpoints_paginator = client.get_paginator('describe_endpoints')
+
+    endpoints = []
+    for endpoints_page in endpoints_paginator.paginate():
+        for endpoint in endpoints_page['Endpoints']:
+            endpoints.append(
+                ReplicationEndpoint(
+                    endpoint_arn=endpoint['EndpointArn'],
+                    endpoint_identifier=endpoint['EndpointIdentifier'],
+                    endpoint_type=endpoint['EndpointType'],
+                    engine_name=endpoint['EngineName'],
+                    database_name=endpoint.get('DatabaseName') or '',
+                    server_name=endpoint.get('ServerName') or '',
+                    engine_display_name=endpoint['EngineDisplayName'],
+                    status=endpoint['Status'],
+                )
+            )
+
+    ReplicationEndpoint.objects.all().delete()
+    ReplicationEndpoint.objects.bulk_create(endpoints)
+
+    tasks_paginator = client.get_paginator('describe_replication_tasks')
+
+    tasks = []
+    for tasks_page in tasks_paginator.paginate():
+        for task in tasks_page['ReplicationTasks']:
+            tasks.append(
+                ReplicationTask(
+                    migration_type=task['MigrationType'],
+                    recovery_checkpoint=task['RecoveryCheckpoint'],
+                    replication_instance_arn=task['ReplicationInstanceArn'],
+                    replication_task_arn=task['ReplicationTaskArn'],
+                    replication_task_creation_date=task['ReplicationTaskCreationDate'],
+                    replication_task_identifier=task['ReplicationTaskIdentifier'],
+                    replication_task_settings=json.loads(task['ReplicationTaskSettings']),
+                    replication_task_start_date=task['ReplicationTaskStartDate'],
+                    replication_task_stats=task['ReplicationTaskStats'],
+                    source_endpoint=ReplicationEndpoint.objects.get(endpoint_arn=task['SourceEndpointArn']),
+                    target_endpoint=ReplicationEndpoint.objects.get(endpoint_arn=task['TargetEndpointArn']),
+                    status=task['Status'],
+                    table_mappings=json.loads(task['TableMappings']),
+                )
+            )
+
+    ReplicationTask.objects.all().delete()
+    ReplicationTask.objects.bulk_create(tasks)
 
     return HttpResponseRedirectToReferrer(request)

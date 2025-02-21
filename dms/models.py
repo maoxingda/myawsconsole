@@ -1,12 +1,14 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
+from django.core.serializers.json import DjangoJSONEncoder
 
 
 class Task(models.Model):
     class Meta:
         verbose_name = '任务'
         verbose_name_plural = '任务'
-        ordering = ('name', )
+        ordering = ('name',)
 
     # 数据字段
     name = models.CharField('名称', max_length=255, unique=True)
@@ -26,7 +28,7 @@ class Table(models.Model):
     class Meta:
         verbose_name = '表'
         verbose_name_plural = '表'
-        ordering = ('name', )
+        ordering = ('name',)
         unique_together = ('task_name', 'schema', 'name',)
 
     name = models.CharField('名称', max_length=255)
@@ -55,3 +57,44 @@ class Endpoint(models.Model):
 
     def __str__(self):
         return self.identifier.replace('-' + settings.ENDPOINT_SUFFIX, '')
+
+
+class ReplicationTask(models.Model):
+    class Meta:
+        verbose_name = '复制任务'
+        verbose_name_plural = '复制任务'
+
+    migration_type                 = models.CharField(max_length=100)
+    recovery_checkpoint            = models.CharField(max_length=255)
+    replication_instance_arn       = models.CharField(max_length=255)
+    replication_task_arn           = models.CharField(max_length=255)
+    replication_task_creation_date = models.DateTimeField(default=timezone.now)
+    replication_task_identifier    = models.CharField(max_length=255, unique=True)
+    replication_task_settings      = models.JSONField()
+    replication_task_start_date    = models.DateTimeField(default=timezone.now)
+    replication_task_stats         = models.JSONField(encoder=DjangoJSONEncoder)
+    source_endpoint                = models.ForeignKey('ReplicationEndpoint', null=True, on_delete=models.SET_NULL, related_name='source_replication_tasks')
+    target_endpoint                = models.ForeignKey('ReplicationEndpoint', null=True, on_delete=models.SET_NULL, related_name='target_replication_tasks')
+    status                         = models.CharField(max_length=50)
+    table_mappings                 = models.JSONField()
+
+    def __str__(self):
+        return self.replication_task_identifier
+
+
+class ReplicationEndpoint(models.Model):
+    class Meta:
+        verbose_name = '端点v2'
+        verbose_name_plural = '端点v2'
+
+    endpoint_arn        = models.CharField(max_length=255, unique=True)
+    endpoint_identifier = models.CharField(max_length=255, unique=True)
+    endpoint_type       = models.CharField(max_length=50)
+    engine_name         = models.CharField(max_length=50)
+    engine_display_name = models.CharField(max_length=50)
+    status              = models.CharField(max_length=50)
+    database_name       = models.CharField(max_length=50)
+    server_name         = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.endpoint_identifier
