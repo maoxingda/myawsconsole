@@ -55,7 +55,7 @@ class DbConn(models.Model):
         url = reverse('schemagenerator:db_tables', args=(self.id, ))
         buttons.append(f'<a href="{url}">表</a>')
 
-        url = reverse('dms:refresh_endpoints')
+        url = reverse('admin:dms_replicationendpoint_changelist')
         buttons.append(f'<a href="{url}?server_name={self.dns}">端点</a>')
 
         url = reverse(f'admin:{self._meta.app_label}_task_add')
