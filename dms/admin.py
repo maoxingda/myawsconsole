@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+from django.db.models import Q
 
 from common.admin import CommonAdmin
 from dms.models import Task, Endpoint, Table, ReplicationTask, ReplicationEndpoint
@@ -71,13 +72,41 @@ class TaskAdmin(CommonAdmin):
 
 @admin.register(Table)
 class TableAdmin(admin.ModelAdmin):
-    def get_search_results(self, request, queryset, search_term):
-        return super().get_search_results(request, queryset, search_term)
-
-    search_fields = ('=name', '=task_name',)
+    search_fields = ('name', 'task_name',)
     list_display = ('name', 'schema', 'task_name',)
     list_filter = ('task_name', 'schema',)
     exclude = ('task_name',)
+
+    def get_search_results(self, request, queryset, search_term):
+        """
+        搜索时，排除以“-”开头的搜索词，可以封装为 admin 通用代码
+        """
+        from django.utils.text import smart_split
+
+        normal_terms = []
+        startswith_hyphen_terms = []
+
+        for term in smart_split(search_term):
+            if term.startswith('-'):
+                startswith_hyphen_terms.append(term[1:])
+            else:
+                normal_terms.append(term)
+
+        queryset, _ = super().get_search_results(request, queryset, ' '.join(normal_terms))
+
+        for term in startswith_hyphen_terms:
+            for search_field in self.get_search_fields(request):
+                queryset = queryset.exclude(**{f'{search_field}__iregex': term})
+
+        exclude_condition = Q()
+
+        for term in startswith_hyphen_terms:
+            for search_field in self.get_search_fields(request):
+                exclude_condition &= Q(**{f'{search_field}__iregex': term})
+
+        queryset = queryset.exclude(exclude_condition)
+
+        return queryset, _
 
     def has_change_permission(self, request, obj=None):
         return False
