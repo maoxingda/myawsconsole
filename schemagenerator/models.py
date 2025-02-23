@@ -58,6 +58,9 @@ class DbConn(models.Model):
         url = reverse('admin:dms_replicationendpoint_changelist')
         buttons.append(f'<a href="{url}?server_name={self.dns}">端点</a>')
 
+        url = reverse('schemagenerator:slot', args=(self.id, ))
+        buttons.append(f'<a href="{url}">复制槽</a>')
+
         url = reverse(f'admin:{self._meta.app_label}_task_add')
         buttons.append(f'<a href="{url}?conn={self.id}&task_type={TaskTypeEnum.SCHEMA.value}">同步表结构</a>')
 
