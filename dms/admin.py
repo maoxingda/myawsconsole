@@ -194,6 +194,7 @@ class ReplicationEndpointAdmin(admin.ModelAdmin):
     )
     list_display = (
         'endpoint_identifier',
+        'html_actions',
         'endpoint_type',
         'database_name',
         'engine_display_name',
@@ -202,3 +203,21 @@ class ReplicationEndpointAdmin(admin.ModelAdmin):
         'endpoint_type',
         'engine_name',
     )
+
+    @admin.display(description='操作')
+    def html_actions(self, obj):
+        buttons = [
+            f'<a href="{settings.AWS_DMS_URL}#endpointDetails/{obj.endpoint_identifier}">AWS控制台</a>',
+        ]
+
+        if obj.endpoint_type == 'SOURCE':
+            url = reverse(f'admin:dms_replicationtask_changelist') + f'?source_endpoint_id={obj.id}'
+        else:
+            url = reverse(f'admin:dms_replicationtask_changelist') + f'?target_endpoint_id={obj.id}'
+        buttons.append(f'<a href="{url}">DMS任务</a>')
+
+        sync_schema_source_pattern = re.compile(rf'-{settings.ENDPOINT_SUFFIX}$')
+        if sync_schema_source_pattern.search(obj.endpoint_identifier):
+            buttons.append(f'🚒')
+
+        return mark_safe(' / '.join(buttons))
