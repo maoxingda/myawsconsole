@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 from common.admin import CommonAdmin
-from redshift.models import Snapshot, Table, RestoreTableTask, RestoreClusterTask, Cluster
+from redshift.models import Snapshot, Table, RestoreTableTask, RestoreClusterTask, Cluster, QueryHistory
 from redshift.views import refresh_snapshots
 
 admin.site.site_title = '我的AWS控制台'
@@ -105,3 +105,11 @@ class RestoreClusterTaskAdmin(admin.ModelAdmin):
     autocomplete_fields = ('snapshot', )
     list_display = ('name', 'snapshot', 'status', )
     exclude = ('status', )
+
+
+@admin.register(QueryHistory)
+class QueryHistoryAdmin(admin.ModelAdmin):
+    search_fields = ('query_text', )
+    ordering = ('-elapsed', )
+    list_display = ('query_id', 'start_time', 'elapsed', 'query_text', )
+    list_display_links = None

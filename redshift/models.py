@@ -93,3 +93,17 @@ class RestoreClusterTask(TimeStampedModel):
 
     def __str__(self):
         return self.name
+
+
+class QueryHistory(TimeStampedModel):
+    class Meta:
+        verbose_name = '查询历史'
+        verbose_name_plural = '查询历史'
+
+    query_id   = models.BigIntegerField('查询ID')
+    start_time = models.DateTimeField('开始时间')
+    elapsed    = models.BigIntegerField('耗时', help_text='单位：分钟')
+    query_text = models.TextField('查询文本')
+
+    def __str__(self):
+        return self.query_text

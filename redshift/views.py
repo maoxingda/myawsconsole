@@ -1,5 +1,6 @@
 import os
 import re
+import textwrap
 import time
 from datetime import datetime, timedelta
 
@@ -10,9 +11,12 @@ from django.conf import settings
 from django.http import HttpResponse, JsonResponse, HttpResponseServerError
 from django.shortcuts import redirect
 from django.urls import reverse
+from django.contrib import messages
 
-from redshift.models import Snapshot, Table, RestoreTableTask, RestoreClusterTask, Cluster
+from redshift.models import Snapshot, Table, RestoreTableTask, RestoreClusterTask, Cluster, QueryHistory
 from redshift.util.corp_wechat import send_message
+from utils import sql as sqlutil
+from utils.http import HttpResponseRedirectToReferrer
 
 
 def refresh_clusters(request):
@@ -93,6 +97,46 @@ def refresh_tables(request):
         Table.objects.bulk_create(tables)
 
     return redirect(reverse(f'admin:{"_".join(request.path.split("/")[1:3])}_changelist'))
+
+
+def refresh_query_history(request):
+    days = int(request.GET.get('days', 7))
+    sql = textwrap.dedent(f"""
+        select
+            query_id                                                     as qid,
+            to_char(start_time + interval '8h', 'yyyy-mm-dd hh24:mi:ss') as stime,
+            elapsed_time / 1000000 / 60                                  as elapsed_minutes,
+            left(query_text, 64)                                         as query_text
+        from
+            sys_query_history
+        where
+            user_id in (102, 109)
+            and start_time + interval '8' hour >= current_date - {days}
+            and position('-- MBI:' in query_text) > 0
+    """)
+    result = sqlutil.execute_sql(sql, sqlutil.TargetDatabase.REDSHIFT, ret_val=True)
+    querys = []
+    for row in result:
+        qid = row[0]
+        stime = row[1]
+        elapsed_minutes = row[2]
+        query_text = row[3]
+        querys.append(
+            QueryHistory(
+                query_id=qid,
+                start_time=stime,
+                elapsed=elapsed_minutes,
+                query_text=query_text,
+            )
+        )
+
+    if querys:
+        QueryHistory.objects.all().delete()
+        QueryHistory.objects.bulk_create(querys)
+
+    messages.info(request, f'刷新列表成功')
+
+    return HttpResponseRedirectToReferrer(request)
 
 
 def launch_restore_table_task(request, task_id):
