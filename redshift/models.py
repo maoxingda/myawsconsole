@@ -100,10 +100,11 @@ class QueryHistory(TimeStampedModel):
         verbose_name = '查询历史'
         verbose_name_plural = '查询历史'
 
-    query_id   = models.BigIntegerField('查询ID')
-    start_time = models.DateTimeField('开始时间')
-    elapsed    = models.BigIntegerField('耗时', help_text='单位：分钟')
-    query_text = models.TextField('查询文本')
+    query_id       = models.BigIntegerField('查询ID')
+    start_time     = models.DateTimeField('开始时间')
+    elapsed        = models.BigIntegerField('耗时', help_text='单位：分钟')
+    dashboard_code = models.CharField('报表编码', max_length=16, null=True)
+    query_uuid     = models.CharField('查询UUID', max_length=64, null=True)
 
     def __str__(self):
         return self.query_text

@@ -116,17 +116,28 @@ def refresh_query_history(request):
     """)
     result = sqlutil.execute_sql(sql, sqlutil.TargetDatabase.REDSHIFT, ret_val=True)
     querys = []
+    dashboard_code_pattern = re.compile(r'-- MBI:(\w+)')
+    query_uuid_pattern = re.compile(r'query: (\w+)')
     for row in result:
         qid = row[0]
         stime = row[1]
         elapsed_minutes = row[2]
         query_text = row[3]
+        query_uuid = ''
+        dashboard_code = ''
+        match = dashboard_code_pattern.search(query_text)
+        if match:
+            dashboard_code = match.group(1)
+        match = query_uuid_pattern.search(query_text)
+        if match:
+            query_uuid = match.group(1)
         querys.append(
             QueryHistory(
                 query_id=qid,
                 start_time=stime,
                 elapsed=elapsed_minutes,
-                query_text=query_text,
+                dashboard_code=dashboard_code,
+                query_uuid=query_uuid,
             )
         )
 

@@ -109,7 +109,10 @@ class RestoreClusterTaskAdmin(admin.ModelAdmin):
 
 @admin.register(QueryHistory)
 class QueryHistoryAdmin(admin.ModelAdmin):
-    search_fields = ('query_text', )
+    search_fields = ('dashboard_code', )
     ordering = ('-elapsed', )
-    list_display = ('query_id', 'start_time', 'elapsed', 'query_text', )
+    list_display = ('dashboard_code', 'start_time', 'elapsed', 'query_id', 'query_uuid', )
     list_display_links = None
+    list_filter = (
+        'dashboard_code',
+    )
