@@ -133,7 +133,7 @@ STATICFILES_DIRS = [
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://75170238.r17.cpolar.top',
+    'https://*.r17.cpolar.top',
 ]
 
 # Default primary key field type
