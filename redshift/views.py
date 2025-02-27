@@ -12,6 +12,7 @@ from django.http import HttpResponse, JsonResponse, HttpResponseServerError
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.contrib import messages
+from django.utils.safestring import mark_safe
 
 from redshift.models import Snapshot, Table, RestoreTableTask, RestoreClusterTask, Cluster, QueryHistory
 from redshift.util.corp_wechat import send_message
@@ -149,6 +150,27 @@ def refresh_query_history(request):
 
     return HttpResponseRedirectToReferrer(request)
 
+
+def vacuum(request):
+    sql = textwrap.dedent("""
+        select vacuum_sort_benefit, 'vacuum ' || schema || '.' || "table" || ';' as ddl
+        from svv_table_info order by vacuum_sort_benefit desc nulls last limit 10
+    """)
+
+    result = sqlutil.execute_sql(sql, sqlutil.TargetDatabase.REDSHIFT, ret_val=True)
+
+    msg = '<pre><table>'
+
+    msg += '<tr><th>benefit</th><th>sql</th></tr>'
+
+    for row in result:
+        msg += f'<tr><td>{int(row[0])}</td><td>{row[1]}</td></tr>'
+
+    msg += '</table></pre>'
+
+    messages.info(request, mark_safe(msg))
+
+    return HttpResponseRedirectToReferrer(request)
 
 def launch_restore_table_task(request, task_id):
     task = RestoreTableTask.objects.get(id=task_id)

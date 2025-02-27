@@ -97,8 +97,8 @@ class RestoreClusterTask(TimeStampedModel):
 
 class QueryHistory(TimeStampedModel):
     class Meta:
-        verbose_name = '查询历史'
-        verbose_name_plural = '查询历史'
+        verbose_name = '性能分析'
+        verbose_name_plural = '性能分析'
 
     query_id       = models.BigIntegerField('查询ID')
     start_time     = models.DateTimeField('开始时间')
