@@ -2,6 +2,7 @@
 
 {% block object-tools-items %}
     <li><a href="{% url 'redshift:refresh_query_history' %}?days=0">今日列表</a></li>
+    <li><a href="{% url 'redshift:refresh_query_history' %}?days=1">两日列表</a></li>
     <li><a href="{% url 'redshift:refresh_query_history' %}">刷新列表</a></li>
     {{ block.super }}
 {% endblock %}
