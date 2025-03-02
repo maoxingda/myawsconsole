@@ -4,21 +4,28 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('doris', '0014_alter_table_name'),
+        ("doris", "0014_alter_table_name"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='DorisDb',
+            name="DorisDb",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=32, verbose_name='数据库')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=32, verbose_name="数据库")),
             ],
             options={
-                'verbose_name': 'Doris数据库',
-                'verbose_name_plural': 'Doris数据库',
+                "verbose_name": "Doris数据库",
+                "verbose_name_plural": "Doris数据库",
             },
         ),
     ]

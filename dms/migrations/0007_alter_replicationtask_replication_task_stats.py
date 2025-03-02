@@ -5,15 +5,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dms', '0006_replicationtask'),
+        ("dms", "0006_replicationtask"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='replicationtask',
-            name='replication_task_stats',
-            field=models.JSONField(encoder=django.core.serializers.json.DjangoJSONEncoder),
+            model_name="replicationtask",
+            name="replication_task_stats",
+            field=models.JSONField(
+                encoder=django.core.serializers.json.DjangoJSONEncoder
+            ),
         ),
     ]

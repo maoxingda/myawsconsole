@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('redshift', '0003_alter_snapshot_unique_together'),
+        ("redshift", "0003_alter_snapshot_unique_together"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='restoretabletask',
-            name='status',
-            field=models.CharField(default='CREATED', max_length=32, verbose_name='状态'),
+            model_name="restoretabletask",
+            name="status",
+            field=models.CharField(
+                default="CREATED", max_length=32, verbose_name="状态"
+            ),
         ),
     ]

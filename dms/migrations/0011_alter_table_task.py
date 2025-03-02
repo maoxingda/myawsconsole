@@ -5,15 +5,20 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dms', '0010_remove_replicationtask_source_endpoint_arn_and_more'),
+        ("dms", "0010_remove_replicationtask_source_endpoint_arn_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='table',
-            name='task',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='tables', to='dms.replicationtask', verbose_name='任务'),
+            model_name="table",
+            name="task",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="tables",
+                to="dms.replicationtask",
+                verbose_name="任务",
+            ),
         ),
     ]

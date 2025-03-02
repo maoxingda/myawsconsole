@@ -4,14 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dms', '0012_replicationtask_aws_console_url'),
+        ("dms", "0012_replicationtask_aws_console_url"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='replicationendpoint',
-            options={'verbose_name': '端点', 'verbose_name_plural': '端点'},
+            name="replicationendpoint",
+            options={"verbose_name": "端点", "verbose_name_plural": "端点"},
         ),
     ]

@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('msk', '0005_topic_topn'),
+        ("msk", "0005_topic_topn"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='topic',
-            name='is_key_out_of_order',
-            field=models.BooleanField(default=False, verbose_name='键粒度'),
+            model_name="topic",
+            name="is_key_out_of_order",
+            field=models.BooleanField(default=False, verbose_name="键粒度"),
         ),
     ]

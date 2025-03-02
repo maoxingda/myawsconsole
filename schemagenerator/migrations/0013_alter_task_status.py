@@ -4,15 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('schemagenerator', '0012_alter_task_status'),
+        ("schemagenerator", "0012_alter_task_status"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='task',
-            name='status',
-            field=models.SmallIntegerField(choices=[(1, '已创建'), (2, '运行中...'), (3, '已完成')], default=1, verbose_name='状态'),
+            model_name="task",
+            name="status",
+            field=models.SmallIntegerField(
+                choices=[(1, "已创建"), (2, "运行中..."), (3, "已完成")],
+                default=1,
+                verbose_name="状态",
+            ),
         ),
     ]

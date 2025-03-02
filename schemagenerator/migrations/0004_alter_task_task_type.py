@@ -4,15 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('schemagenerator', '0003_task_task_type'),
+        ("schemagenerator", "0003_task_task_type"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='task',
-            name='task_type',
-            field=models.CharField(choices=[('data', '表数据'), ('schema', '表结构')], default='schema', max_length=32, verbose_name='任务类型'),
+            model_name="task",
+            name="task_type",
+            field=models.CharField(
+                choices=[("data", "表数据"), ("schema", "表结构")],
+                default="schema",
+                max_length=32,
+                verbose_name="任务类型",
+            ),
         ),
     ]

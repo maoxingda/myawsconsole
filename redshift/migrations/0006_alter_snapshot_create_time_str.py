@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('redshift', '0005_alter_snapshot_cluster_alter_snapshot_create_time_and_more'),
+        ("redshift", "0005_alter_snapshot_cluster_alter_snapshot_create_time_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='snapshot',
-            name='create_time_str',
+            model_name="snapshot",
+            name="create_time_str",
             field=models.CharField(editable=False, max_length=32),
         ),
     ]

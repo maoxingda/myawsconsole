@@ -4,14 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('msk', '0009_alter_topic_has_data'),
+        ("msk", "0009_alter_topic_has_data"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='topic',
-            name='is_key_out_of_order',
+            model_name="topic",
+            name="is_key_out_of_order",
         ),
     ]

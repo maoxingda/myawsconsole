@@ -1,16 +1,14 @@
 import textwrap
 
-from django.db import models
 from django.contrib import admin
+from django.db import models
+from django.template import Context, Template
 from django.utils.safestring import mark_safe
-from django.shortcuts import reverse
-from django.template import Template, Context
-
-import json
 
 
 def format_item(item):
-    content = textwrap.dedent("""
+    content = textwrap.dedent(
+        """
         {% load date_format %}
         <pre>
             <table>
@@ -26,7 +24,8 @@ def format_item(item):
                 {% endfor %}
             </table>
         </pre>
-    """)
+    """
+    )
 
     context = Context({"content": item})
 
@@ -37,7 +36,7 @@ def format_item(item):
 
 class Order(models.Model):
     class Meta:
-        verbose_name = verbose_name_plural = '订单'
+        verbose_name = verbose_name_plural = "订单"
 
     order_rn = models.CharField(max_length=100)
     content = models.JSONField(default=dict)
@@ -45,14 +44,14 @@ class Order(models.Model):
     def __str__(self):
         return self.order_rn
 
-    @admin.display(description='内容')
+    @admin.display(description="内容")
     def content_format(self):
         return format_item(self.content)
 
 
 class MainTransaction(models.Model):
     class Meta:
-        verbose_name = verbose_name_plural = '主交易'
+        verbose_name = verbose_name_plural = "主交易"
 
     main_transaction_rn = models.CharField(max_length=100)
     content = models.JSONField(default=dict)
@@ -60,14 +59,14 @@ class MainTransaction(models.Model):
     def __str__(self):
         return self.main_transaction_rn
 
-    @admin.display(description='内容')
+    @admin.display(description="内容")
     def content_format(self):
         return format_item(self.content)
 
 
 class AccountTransaction(models.Model):
     class Meta:
-        verbose_name = verbose_name_plural = '账户交易'
+        verbose_name = verbose_name_plural = "账户交易"
 
     main_transaction_rn = models.CharField(max_length=100)
     account_rn = models.CharField(max_length=100)
@@ -76,14 +75,14 @@ class AccountTransaction(models.Model):
     def __str__(self):
         return self.account_rn
 
-    @admin.display(description='内容')
+    @admin.display(description="内容")
     def content_format(self):
         return format_item(self.content)
 
 
 class AccountTransactionDetail(models.Model):
     class Meta:
-        verbose_name = verbose_name_plural = '账户交易详情'
+        verbose_name = verbose_name_plural = "账户交易详情"
 
     account_transaction_detail_rn = models.CharField(max_length=100)
     content = models.JSONField(default=dict)
@@ -91,6 +90,6 @@ class AccountTransactionDetail(models.Model):
     def __str__(self):
         return self.account_transaction_detail_rn
 
-    @admin.display(description='内容')
+    @admin.display(description="内容")
     def content_format(self):
         return format_item(self.content)

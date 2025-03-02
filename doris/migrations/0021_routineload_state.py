@@ -5,16 +5,17 @@ import django.utils.timezone
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('doris', '0020_routineload'),
+        ("doris", "0020_routineload"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='routineload',
-            name='state',
-            field=models.CharField(default=django.utils.timezone.now, max_length=32, verbose_name='状态'),
+            model_name="routineload",
+            name="state",
+            field=models.CharField(
+                default=django.utils.timezone.now, max_length=32, verbose_name="状态"
+            ),
             preserve_default=False,
         ),
     ]

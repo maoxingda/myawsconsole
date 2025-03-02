@@ -4,16 +4,15 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('doris', '0006_alter_s3loadtask_table'),
+        ("doris", "0006_alter_s3loadtask_table"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='s3loadtask',
-            name='attempts',
-            field=models.SmallIntegerField(default=0, verbose_name='执行次数'),
+            model_name="s3loadtask",
+            name="attempts",
+            field=models.SmallIntegerField(default=0, verbose_name="执行次数"),
             preserve_default=False,
         ),
     ]

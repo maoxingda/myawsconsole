@@ -4,20 +4,23 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('schemagenerator', '0008_remove_task_table_mappings'),
+        ("schemagenerator", "0008_remove_task_table_mappings"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='dbconn',
-            name='target_schema',
-            field=models.CharField(blank=True, default='temp', max_length=128, verbose_name='目标表Schema'),
+            model_name="dbconn",
+            name="target_schema",
+            field=models.CharField(
+                blank=True, default="temp", max_length=128, verbose_name="目标表Schema"
+            ),
         ),
         migrations.AlterField(
-            model_name='dbconn',
-            name='target_table_name_prefix',
-            field=models.CharField(blank=True, max_length=128, verbose_name='目标表前缀'),
+            model_name="dbconn",
+            name="target_table_name_prefix",
+            field=models.CharField(
+                blank=True, max_length=128, verbose_name="目标表前缀"
+            ),
         ),
     ]

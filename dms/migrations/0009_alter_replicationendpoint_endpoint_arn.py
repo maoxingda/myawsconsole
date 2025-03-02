@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dms', '0008_replicationendpoint'),
+        ("dms", "0008_replicationendpoint"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='replicationendpoint',
-            name='endpoint_arn',
+            model_name="replicationendpoint",
+            name="endpoint_arn",
             field=models.CharField(max_length=255, unique=True),
         ),
     ]

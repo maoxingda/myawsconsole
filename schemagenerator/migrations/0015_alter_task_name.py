@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('schemagenerator', '0014_alter_task_status'),
+        ("schemagenerator", "0014_alter_task_status"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='task',
-            name='name',
-            field=models.CharField(max_length=128, verbose_name='名称123'),
+            model_name="task",
+            name="name",
+            field=models.CharField(max_length=128, verbose_name="名称123"),
         ),
     ]

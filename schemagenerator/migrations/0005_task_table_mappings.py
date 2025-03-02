@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('schemagenerator', '0004_alter_task_task_type'),
+        ("schemagenerator", "0004_alter_task_task_type"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='task',
-            name='table_mappings',
-            field=models.JSONField(default='{}', verbose_name='表映射'),
+            model_name="task",
+            name="table_mappings",
+            field=models.JSONField(default="{}", verbose_name="表映射"),
         ),
     ]

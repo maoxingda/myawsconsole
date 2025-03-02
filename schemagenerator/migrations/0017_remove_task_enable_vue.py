@@ -4,14 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('schemagenerator', '0016_alter_task_name'),
+        ("schemagenerator", "0016_alter_task_name"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='task',
-            name='enable_vue',
+            model_name="task",
+            name="enable_vue",
         ),
     ]

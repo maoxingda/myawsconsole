@@ -4,14 +4,17 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('schemagenerator', '0017_remove_task_enable_vue'),
+        ("schemagenerator", "0017_remove_task_enable_vue"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='task',
-            options={'ordering': ('-id',), 'verbose_name': '任务', 'verbose_name_plural': '任务'},
+            name="task",
+            options={
+                "ordering": ("-id",),
+                "verbose_name": "任务",
+                "verbose_name_plural": "任务",
+            },
         ),
     ]

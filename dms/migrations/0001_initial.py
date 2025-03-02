@@ -4,57 +4,104 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Endpoint',
+            name="Endpoint",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('identifier', models.CharField(max_length=255, unique=True, verbose_name='ID')),
-                ('arn', models.CharField(max_length=255, verbose_name='ARN')),
-                ('database', models.CharField(max_length=32, null=True, verbose_name='数据库')),
-                ('url', models.URLField(max_length=255)),
-                ('server_name', models.CharField(max_length=255, verbose_name='数据库地址')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "identifier",
+                    models.CharField(max_length=255, unique=True, verbose_name="ID"),
+                ),
+                ("arn", models.CharField(max_length=255, verbose_name="ARN")),
+                (
+                    "database",
+                    models.CharField(max_length=32, null=True, verbose_name="数据库"),
+                ),
+                ("url", models.URLField(max_length=255)),
+                (
+                    "server_name",
+                    models.CharField(max_length=255, verbose_name="数据库地址"),
+                ),
             ],
             options={
-                'verbose_name': '端点',
-                'verbose_name_plural': '端点',
-                'ordering': ('identifier', 'database'),
+                "verbose_name": "端点",
+                "verbose_name_plural": "端点",
+                "ordering": ("identifier", "database"),
             },
         ),
         migrations.CreateModel(
-            name='Table',
+            name="Table",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=255, unique=True, verbose_name='名称')),
-                ('schema', models.CharField(max_length=32)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(max_length=255, unique=True, verbose_name="名称"),
+                ),
+                ("schema", models.CharField(max_length=32)),
             ],
             options={
-                'verbose_name': '表',
-                'verbose_name_plural': '表',
-                'ordering': ('name',),
+                "verbose_name": "表",
+                "verbose_name_plural": "表",
+                "ordering": ("name",),
             },
         ),
         migrations.CreateModel(
-            name='Task',
+            name="Task",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=255, unique=True, verbose_name='名称')),
-                ('arn', models.CharField(max_length=255, verbose_name='arn')),
-                ('url', models.URLField(max_length=255)),
-                ('table_mappings', models.JSONField(default=dict, max_length=32768, verbose_name='表映射')),
-                ('source_endpoint_arn', models.CharField(max_length=255, null=True, verbose_name='源端点arn')),
-                ('table_name', models.CharField(max_length=255, verbose_name='表名称')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(max_length=255, unique=True, verbose_name="名称"),
+                ),
+                ("arn", models.CharField(max_length=255, verbose_name="arn")),
+                ("url", models.URLField(max_length=255)),
+                (
+                    "table_mappings",
+                    models.JSONField(
+                        default=dict, max_length=32768, verbose_name="表映射"
+                    ),
+                ),
+                (
+                    "source_endpoint_arn",
+                    models.CharField(
+                        max_length=255, null=True, verbose_name="源端点arn"
+                    ),
+                ),
+                ("table_name", models.CharField(max_length=255, verbose_name="表名称")),
             ],
             options={
-                'verbose_name': '任务',
-                'verbose_name_plural': '任务',
-                'ordering': ('name',),
+                "verbose_name": "任务",
+                "verbose_name_plural": "任务",
+                "ordering": ("name",),
             },
         ),
     ]

@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('msk', '0004_topic_event_time_field_name'),
+        ("msk", "0004_topic_event_time_field_name"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='topic',
-            name='topn',
-            field=models.IntegerField(default=5, verbose_name='TOP N'),
+            model_name="topic",
+            name="topn",
+            field=models.IntegerField(default=5, verbose_name="TOP N"),
         ),
     ]

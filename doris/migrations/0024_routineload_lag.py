@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('doris', '0023_alter_routineload_options'),
+        ("doris", "0023_alter_routineload_options"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='routineload',
-            name='lag',
-            field=models.BigIntegerField(default=0, verbose_name='延迟'),
+            model_name="routineload",
+            name="lag",
+            field=models.BigIntegerField(default=0, verbose_name="延迟"),
         ),
     ]

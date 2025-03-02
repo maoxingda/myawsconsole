@@ -4,19 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('doris', '0021_routineload_state'),
+        ("doris", "0021_routineload_state"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='routineload',
-            name='name',
-            field=models.CharField(max_length=32, verbose_name='名称'),
+            model_name="routineload",
+            name="name",
+            field=models.CharField(max_length=32, verbose_name="名称"),
         ),
         migrations.AlterUniqueTogether(
-            name='routineload',
-            unique_together={('db', 'name')},
+            name="routineload",
+            unique_together={("db", "name")},
         ),
     ]

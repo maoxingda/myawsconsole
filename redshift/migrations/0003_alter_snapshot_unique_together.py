@@ -4,14 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('redshift', '0002_alter_cluster_identifier'),
+        ("redshift", "0002_alter_cluster_identifier"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='snapshot',
-            unique_together={('cluster', 'identifier')},
+            name="snapshot",
+            unique_together={("cluster", "identifier")},
         ),
     ]

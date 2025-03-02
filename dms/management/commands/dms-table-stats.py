@@ -1,7 +1,6 @@
 import re
 from collections import defaultdict
 from operator import itemgetter
-from pprint import pprint
 
 import boto3
 import pandas
@@ -15,24 +14,51 @@ class Command(BaseCommand):
     # 分区表正则表达式（复合分区、范围分区、哈希分区顺序不能调整）
     partition_table_name_patterns = [
         # 复合分区
-        (re.compile(r'([_a-z0-9]+[a-z])_p?\d{1,3}_default')                      , '先哈希分区（1到3位数字）再范围分区（默认分区）'), # 分区前缀标识字母：p为可选的
-        (re.compile(r'([_a-z0-9]+[a-z])_p?\d{1,3}_p?\d{4}')                      , '先哈希分区（1到3位数字）再范围分区（按年分区）'),
-        (re.compile(r'([_a-z0-9]+[a-z])_p?\d{1,3}_p?(?:\d{6}|\d{4}_\d{2})')      , '先哈希分区（1到3位数字）再范围分区（按月分区）'),
-        (re.compile(r'([_a-z0-9]+[a-z])_p?\d{1,3}_p?(?:\d{8}|\d{4}_\d{2}_\d{2})'), '先哈希分区（1到3位数字）再范围分区（按日分区）'),
-
-        (re.compile(r'([_a-z0-9]+[a-z])_default_p?\d{1,3}')                      , '先范围分区（默认分区）再哈希分区（1到3位数字）'),
-        (re.compile(r'([_a-z0-9]+[a-z])_p?\d{4}_p?\d{1,3}')                      , '先范围分区（按年分区）再哈希分区（1到3位数字）'),
-        (re.compile(r'([_a-z0-9]+[a-z])_p?(?:\d{6}|\d{4}_\d{2})_p?\d{1,3}')      , '先范围分区（按月分区）再哈希分区（1到3位数字）'),
-        (re.compile(r'([_a-z0-9]+[a-z])_p?(?:\d{8}|\d{4}_\d{2}_\d{2})_p?\d{1,3}'), '先范围分区（按日分区）再哈希分区（1到3位数字）'),
-
+        (
+            re.compile(r"([_a-z0-9]+[a-z])_p?\d{1,3}_default"),
+            "先哈希分区（1到3位数字）再范围分区（默认分区）",
+        ),  # 分区前缀标识字母：p为可选的
+        (
+            re.compile(r"([_a-z0-9]+[a-z])_p?\d{1,3}_p?\d{4}"),
+            "先哈希分区（1到3位数字）再范围分区（按年分区）",
+        ),
+        (
+            re.compile(r"([_a-z0-9]+[a-z])_p?\d{1,3}_p?(?:\d{6}|\d{4}_\d{2})"),
+            "先哈希分区（1到3位数字）再范围分区（按月分区）",
+        ),
+        (
+            re.compile(r"([_a-z0-9]+[a-z])_p?\d{1,3}_p?(?:\d{8}|\d{4}_\d{2}_\d{2})"),
+            "先哈希分区（1到3位数字）再范围分区（按日分区）",
+        ),
+        (
+            re.compile(r"([_a-z0-9]+[a-z])_default_p?\d{1,3}"),
+            "先范围分区（默认分区）再哈希分区（1到3位数字）",
+        ),
+        (
+            re.compile(r"([_a-z0-9]+[a-z])_p?\d{4}_p?\d{1,3}"),
+            "先范围分区（按年分区）再哈希分区（1到3位数字）",
+        ),
+        (
+            re.compile(r"([_a-z0-9]+[a-z])_p?(?:\d{6}|\d{4}_\d{2})_p?\d{1,3}"),
+            "先范围分区（按月分区）再哈希分区（1到3位数字）",
+        ),
+        (
+            re.compile(r"([_a-z0-9]+[a-z])_p?(?:\d{8}|\d{4}_\d{2}_\d{2})_p?\d{1,3}"),
+            "先范围分区（按日分区）再哈希分区（1到3位数字）",
+        ),
         # 范围分区
-        (re.compile(r'([_a-z0-9]+[a-z])_default')                                , '范围分区（默认分区）'),
-        (re.compile(r'([_a-z0-9]+[a-z])_p?\d{4}')                                , '范围分区（按年分区）'),
-        (re.compile(r'([_a-z0-9]+[a-z])_p?(?:\d{6}|\d{4}_\d{2})')                , '范围分区（按月分区）'),
-        (re.compile(r'([_a-z0-9]+[a-z])_p?(?:\d{8}|\d{4}_\d{2}_\d{2})')          , '范围分区（按日分区）'),
-
+        (re.compile(r"([_a-z0-9]+[a-z])_default"), "范围分区（默认分区）"),
+        (re.compile(r"([_a-z0-9]+[a-z])_p?\d{4}"), "范围分区（按年分区）"),
+        (
+            re.compile(r"([_a-z0-9]+[a-z])_p?(?:\d{6}|\d{4}_\d{2})"),
+            "范围分区（按月分区）",
+        ),
+        (
+            re.compile(r"([_a-z0-9]+[a-z])_p?(?:\d{8}|\d{4}_\d{2}_\d{2})"),
+            "范围分区（按日分区）",
+        ),
         # 哈希分区
-        (re.compile(r'([_a-z0-9]+[a-z])_p?\d{1,3}')                              , '哈希分区（1到3位数字）'),
+        (re.compile(r"([_a-z0-9]+[a-z])_p?\d{1,3}"), "哈希分区（1到3位数字）"),
     ]
 
     def handle(self, *args, **options):
@@ -65,7 +91,7 @@ class Command(BaseCommand):
                 )["Endpoints"][0]
                 database_name = endpoint.get("DatabaseName", "")
                 if database_name:
-                    database_name += '.'
+                    database_name += "."
                 dts_paginator = client.get_paginator("describe_table_statistics")
                 for dts_page in dts_paginator.paginate(
                     ReplicationTaskArn=task["ReplicationTaskArn"]
@@ -76,18 +102,22 @@ class Command(BaseCommand):
                         i += 1
                         table_name = f"{stat['SchemaName']}.{stat['TableName']}"
                         for pattern, _ in self.partition_table_name_patterns:
-                            match = pattern.fullmatch(stat['TableName'])
+                            match = pattern.fullmatch(stat["TableName"])
                             if match:
                                 # sys.stderr.write(f"{table_name}\n")
                                 table_name = f"{stat['SchemaName']}.{match.group(1)}"
                                 break
                         cdc_counts = stat["Inserts"] + stat["Updates"] + stat["Deletes"]
                         if cdc_counts > 0:
-                            table_stats[f"{database_name}{table_name}"].append([
-                                cdc_counts,
-                                task["ReplicationTaskIdentifier"],
-                                task["ReplicationTaskStartDate"].replace(tzinfo=None),
-                            ])
+                            table_stats[f"{database_name}{table_name}"].append(
+                                [
+                                    cdc_counts,
+                                    task["ReplicationTaskIdentifier"],
+                                    task["ReplicationTaskStartDate"].replace(
+                                        tzinfo=None
+                                    ),
+                                ]
+                            )
                             # print(f"{table_name:<64}", cdc_counts, task["ReplicationTaskIdentifier"])
 
         table_stats = [
@@ -96,14 +126,16 @@ class Command(BaseCommand):
                 sum(cnt for cnt, *_ in val),
                 val[0][2],
                 f"https://cn-northwest-1.console.amazonaws.cn/dms/v2/home"
-                f"?region=cn-northwest-1#taskDetails/{val[0][1]}"
+                f"?region=cn-northwest-1#taskDetails/{val[0][1]}",
             ]
             for table_name, val in table_stats.items()
         ]
         table_stats.sort(key=itemgetter(1), reverse=True)
-        print(tabulate(table_stats[:20], showindex="always", tablefmt='simple_grid'))
+        print(tabulate(table_stats[:20], showindex="always", tablefmt="simple_grid"))
         # print(i)
         # pprint(sorted(tasks))
 
-        df = pandas.DataFrame(table_stats, columns=["table_name", "cdc_counts", "start_date", "task"])
+        df = pandas.DataFrame(
+            table_stats, columns=["table_name", "cdc_counts", "start_date", "task"]
+        )
         df.to_excel("table-stats.xlsx", index=False)

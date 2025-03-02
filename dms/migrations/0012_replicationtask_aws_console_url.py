@@ -5,15 +5,14 @@ import django.utils.timezone
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dms', '0011_alter_table_task'),
+        ("dms", "0011_alter_table_task"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='replicationtask',
-            name='aws_console_url',
+            model_name="replicationtask",
+            name="aws_console_url",
             field=models.URLField(default=django.utils.timezone.now, max_length=255),
             preserve_default=False,
         ),

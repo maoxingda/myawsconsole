@@ -4,15 +4,23 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('schemagenerator', '0013_alter_task_status'),
+        ("schemagenerator", "0013_alter_task_status"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='task',
-            name='status',
-            field=models.CharField(choices=[('created', '已创建'), ('running', '运行中...'), ('completed', '已完成')], default='created', max_length=32, verbose_name='状态'),
+            model_name="task",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("created", "已创建"),
+                    ("running", "运行中..."),
+                    ("completed", "已完成"),
+                ],
+                default="created",
+                max_length=32,
+                verbose_name="状态",
+            ),
         ),
     ]

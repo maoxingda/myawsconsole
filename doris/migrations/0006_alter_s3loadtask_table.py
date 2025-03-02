@@ -5,15 +5,18 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('doris', '0005_remove_s3loadtask_sql_s3loadtask_bucket_key_and_more'),
+        ("doris", "0005_remove_s3loadtask_sql_s3loadtask_bucket_key_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='s3loadtask',
-            name='table',
-            field=models.ForeignKey(default=None, on_delete=django.db.models.deletion.SET_DEFAULT, to='doris.table'),
+            model_name="s3loadtask",
+            name="table",
+            field=models.ForeignKey(
+                default=None,
+                on_delete=django.db.models.deletion.SET_DEFAULT,
+                to="doris.table",
+            ),
         ),
     ]

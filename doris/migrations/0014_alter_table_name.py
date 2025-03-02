@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('doris', '0013_alter_s3loadtask_bucket_key_and_more'),
+        ("doris", "0013_alter_s3loadtask_bucket_key_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='table',
-            name='name',
-            field=models.CharField(max_length=128, unique=True, verbose_name='表'),
+            model_name="table",
+            name="name",
+            field=models.CharField(max_length=128, unique=True, verbose_name="表"),
         ),
     ]

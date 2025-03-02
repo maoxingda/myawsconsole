@@ -5,16 +5,17 @@ import django.utils.timezone
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dynamodb', '0001_initial'),
+        ("dynamodb", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='order',
-            name='order_rn',
-            field=models.CharField(default=django.utils.timezone.now, max_length=100, verbose_name='rn'),
+            model_name="order",
+            name="order_rn",
+            field=models.CharField(
+                default=django.utils.timezone.now, max_length=100, verbose_name="rn"
+            ),
             preserve_default=False,
         ),
     ]

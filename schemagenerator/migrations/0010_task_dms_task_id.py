@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('schemagenerator', '0009_alter_dbconn_target_schema_and_more'),
+        ("schemagenerator", "0009_alter_dbconn_target_schema_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='task',
-            name='dms_task_id',
+            model_name="task",
+            name="dms_task_id",
             field=models.CharField(editable=False, max_length=255, null=True),
         ),
     ]

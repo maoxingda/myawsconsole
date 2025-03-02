@@ -4,14 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('schemagenerator', '0007_alter_task_table_mappings'),
+        ("schemagenerator", "0007_alter_task_table_mappings"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='task',
-            name='table_mappings',
+            model_name="task",
+            name="table_mappings",
         ),
     ]

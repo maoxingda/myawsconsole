@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('msk', '0003_topic_end_time_topic_start_time'),
+        ("msk", "0003_topic_end_time_topic_start_time"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='topic',
-            name='event_time_field_name',
-            field=models.CharField(default='event_time', max_length=128, verbose_name='事件时间字段名'),
+            model_name="topic",
+            name="event_time_field_name",
+            field=models.CharField(
+                default="event_time", max_length=128, verbose_name="事件时间字段名"
+            ),
         ),
     ]

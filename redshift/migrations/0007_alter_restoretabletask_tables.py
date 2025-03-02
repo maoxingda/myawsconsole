@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('redshift', '0006_alter_snapshot_create_time_str'),
+        ("redshift", "0006_alter_snapshot_create_time_str"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='restoretabletask',
-            name='tables',
-            field=models.ManyToManyField(to='redshift.Table', verbose_name='表'),
+            model_name="restoretabletask",
+            name="tables",
+            field=models.ManyToManyField(to="redshift.Table", verbose_name="表"),
         ),
     ]

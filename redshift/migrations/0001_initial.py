@@ -6,84 +6,181 @@ import django_extensions.db.fields
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Cluster',
+            name="Cluster",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('identifier', models.CharField(max_length=128, verbose_name='集群')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("identifier", models.CharField(max_length=128, verbose_name="集群")),
             ],
             options={
-                'verbose_name': '集群',
-                'verbose_name_plural': '集群',
+                "verbose_name": "集群",
+                "verbose_name_plural": "集群",
             },
         ),
         migrations.CreateModel(
-            name='Snapshot',
+            name="Snapshot",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('cluster', models.CharField(max_length=128, verbose_name='集群')),
-                ('identifier', models.CharField(max_length=128, verbose_name='快照')),
-                ('create_time', models.DateTimeField(verbose_name='创建时间')),
-                ('create_time_str', models.CharField(max_length=32)),
-                ('start_date', models.DateField(blank=True, null=True, verbose_name='开始日期')),
-                ('end_date', models.DateField(blank=True, null=True, verbose_name='结束日期')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("cluster", models.CharField(max_length=128, verbose_name="集群")),
+                ("identifier", models.CharField(max_length=128, verbose_name="快照")),
+                ("create_time", models.DateTimeField(verbose_name="创建时间")),
+                ("create_time_str", models.CharField(max_length=32)),
+                (
+                    "start_date",
+                    models.DateField(blank=True, null=True, verbose_name="开始日期"),
+                ),
+                (
+                    "end_date",
+                    models.DateField(blank=True, null=True, verbose_name="结束日期"),
+                ),
             ],
             options={
-                'verbose_name': '快照',
-                'verbose_name_plural': '快照',
-                'ordering': ('-create_time',),
+                "verbose_name": "快照",
+                "verbose_name_plural": "快照",
+                "ordering": ("-create_time",),
             },
         ),
         migrations.CreateModel(
-            name='Table',
+            name="Table",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=255, unique=True, verbose_name='名称')),
-                ('schema', models.CharField(max_length=32)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(max_length=255, unique=True, verbose_name="名称"),
+                ),
+                ("schema", models.CharField(max_length=32)),
             ],
             options={
-                'verbose_name': '表',
-                'verbose_name_plural': '表',
-                'ordering': ('name',),
+                "verbose_name": "表",
+                "verbose_name_plural": "表",
+                "ordering": ("name",),
             },
         ),
         migrations.CreateModel(
-            name='RestoreTableTask',
+            name="RestoreTableTask",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', django_extensions.db.fields.CreationDateTimeField(auto_now_add=True, verbose_name='created')),
-                ('modified', django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified')),
-                ('name', models.CharField(max_length=128, verbose_name='名称')),
-                ('is_nofity', models.BooleanField(default=True, verbose_name='是否发送完成通知')),
-                ('snapshot', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='redshift.snapshot', verbose_name='快照')),
-                ('tables', models.ManyToManyField(to='redshift.table', verbose_name='表')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "created",
+                    django_extensions.db.fields.CreationDateTimeField(
+                        auto_now_add=True, verbose_name="created"
+                    ),
+                ),
+                (
+                    "modified",
+                    django_extensions.db.fields.ModificationDateTimeField(
+                        auto_now=True, verbose_name="modified"
+                    ),
+                ),
+                ("name", models.CharField(max_length=128, verbose_name="名称")),
+                (
+                    "is_nofity",
+                    models.BooleanField(default=True, verbose_name="是否发送完成通知"),
+                ),
+                (
+                    "snapshot",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="redshift.snapshot",
+                        verbose_name="快照",
+                    ),
+                ),
+                (
+                    "tables",
+                    models.ManyToManyField(to="redshift.table", verbose_name="表"),
+                ),
             ],
             options={
-                'verbose_name': '恢复表任务',
-                'verbose_name_plural': '恢复表任务',
+                "verbose_name": "恢复表任务",
+                "verbose_name_plural": "恢复表任务",
             },
         ),
         migrations.CreateModel(
-            name='RestoreClusterTask',
+            name="RestoreClusterTask",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', django_extensions.db.fields.CreationDateTimeField(auto_now_add=True, verbose_name='created')),
-                ('modified', django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified')),
-                ('name', models.CharField(max_length=128, verbose_name='名称')),
-                ('is_nofity', models.BooleanField(default=True, verbose_name='是否发送完成通知')),
-                ('status', models.CharField(default='CREATED', max_length=32, verbose_name='状态')),
-                ('snapshot', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='redshift.snapshot', verbose_name='快照')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "created",
+                    django_extensions.db.fields.CreationDateTimeField(
+                        auto_now_add=True, verbose_name="created"
+                    ),
+                ),
+                (
+                    "modified",
+                    django_extensions.db.fields.ModificationDateTimeField(
+                        auto_now=True, verbose_name="modified"
+                    ),
+                ),
+                ("name", models.CharField(max_length=128, verbose_name="名称")),
+                (
+                    "is_nofity",
+                    models.BooleanField(default=True, verbose_name="是否发送完成通知"),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        default="CREATED", max_length=32, verbose_name="状态"
+                    ),
+                ),
+                (
+                    "snapshot",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="redshift.snapshot",
+                        verbose_name="快照",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': '恢复集群任务',
-                'verbose_name_plural': '恢复集群任务',
+                "verbose_name": "恢复集群任务",
+                "verbose_name_plural": "恢复集群任务",
             },
         ),
     ]

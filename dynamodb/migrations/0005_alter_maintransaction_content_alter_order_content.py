@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dynamodb', '0004_maintransaction'),
+        ("dynamodb", "0004_maintransaction"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='maintransaction',
-            name='content',
+            model_name="maintransaction",
+            name="content",
             field=models.JSONField(default=dict),
         ),
         migrations.AlterField(
-            model_name='order',
-            name='content',
+            model_name="order",
+            name="content",
             field=models.JSONField(default=dict),
         ),
     ]

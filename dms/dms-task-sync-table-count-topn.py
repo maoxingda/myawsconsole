@@ -2,21 +2,23 @@ import boto3
 
 
 def main():
-    client = boto3.client('dms')
+    client = boto3.client("dms")
 
     # 获取所有任务
-    task_paginator = client.get_paginator('describe_replication_tasks')
+    task_paginator = client.get_paginator("describe_replication_tasks")
 
     task_table_counts = []
     for task_page in task_paginator.paginate():
-        for task in task_page['ReplicationTasks']:
+        for task in task_page["ReplicationTasks"]:
             table_count = 0
-            task_id = task['ReplicationTaskIdentifier']
+            task_id = task["ReplicationTaskIdentifier"]
 
-            stats_paginator = client.get_paginator('describe_table_statistics')
+            stats_paginator = client.get_paginator("describe_table_statistics")
 
-            for stats_page in stats_paginator.paginate(ReplicationTaskArn=task['ReplicationTaskArn']):
-                table_count += len(stats_page['TableStatistics'])
+            for stats_page in stats_paginator.paginate(
+                ReplicationTaskArn=task["ReplicationTaskArn"]
+            ):
+                table_count += len(stats_page["TableStatistics"])
 
             # 存储任务和其表数量
             task_table_counts.append((task_id, table_count))
@@ -30,5 +32,5 @@ def main():
         print(f"Task ID: {task_id:<80}, Tables Synced: {table_count}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

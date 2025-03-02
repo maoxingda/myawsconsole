@@ -5,15 +5,20 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dms', '0004_alter_table_unique_together'),
+        ("dms", "0004_alter_table_unique_together"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='table',
-            name='task',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='tables', to='dms.task', verbose_name='任务'),
+            model_name="table",
+            name="task",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="tables",
+                to="dms.task",
+                verbose_name="任务",
+            ),
         ),
     ]

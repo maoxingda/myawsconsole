@@ -5,11 +5,18 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 from common.admin import CommonAdmin
-from redshift.models import Snapshot, Table, RestoreTableTask, RestoreClusterTask, Cluster, QueryHistory
+from redshift.models import (
+    Cluster,
+    QueryHistory,
+    RestoreClusterTask,
+    RestoreTableTask,
+    Snapshot,
+    Table,
+)
 from redshift.views import refresh_snapshots
 
-admin.site.site_title = '我的AWS控制台'
-admin.site.site_header = '我的AWS控制台'
+admin.site.site_title = "我的AWS控制台"
+admin.site.site_header = "我的AWS控制台"
 
 
 class PermissionAdmin(admin.ModelAdmin):
@@ -25,31 +32,34 @@ class PermissionAdmin(admin.ModelAdmin):
 
 @admin.register(Cluster)
 class ClusterAdmin(PermissionAdmin):
-    list_display = ('identifier', 'html_actions', )
+    list_display = (
+        "identifier",
+        "html_actions",
+    )
 
-    @admin.display(description='操作')
+    @admin.display(description="操作")
     def html_actions(self, obj):
         buttons = []
 
-        cluster_addr = f'{settings.AWS_REDSHIFT_URL}#cluster-details?cluster={obj.identifier.lower()}'
+        cluster_addr = f"{settings.AWS_REDSHIFT_URL}#cluster-details?cluster={obj.identifier.lower()}"
         botton1 = f'<a href="{cluster_addr}">AWS控制台</a>'
 
         buttons.append(botton1)
 
-        return mark_safe(' / '.join(buttons))
+        return mark_safe(" / ".join(buttons))
 
     def has_delete_permission(self, request, obj=None):
         return True
 
     def delete_view(self, request, object_id, extra_context=None):
-        if request.method == 'POST':
-            client = boto3.client('redshift')
+        if request.method == "POST":
+            client = boto3.client("redshift")
             cluster = Cluster.objects.get(id=object_id)
             client.delete_cluster(ClusterIdentifier=cluster.identifier, SkipFinalClusterSnapshot=True)
         return super().delete_view(request, object_id, extra_context)
 
     def delete_queryset(self, request, queryset):
-        client = boto3.client('redshift')
+        client = boto3.client("redshift")
         for cluster in queryset:
             client.delete_cluster(ClusterIdentifier=cluster.identifier, SkipFinalClusterSnapshot=True)
         super().delete_queryset(request, queryset)
@@ -57,9 +67,12 @@ class ClusterAdmin(PermissionAdmin):
 
 @admin.register(Snapshot)
 class SnapshotAdmin(CommonAdmin):
-    date_hierarchy = 'create_time'
-    search_fields = ('create_time_str', )
-    list_display = ('__str__', 'html_actions', )
+    date_hierarchy = "create_time"
+    search_fields = ("create_time_str",)
+    list_display = (
+        "__str__",
+        "html_actions",
+    )
 
     def has_delete_permission(self, request, obj=None):
         return False
@@ -70,49 +83,61 @@ class SnapshotAdmin(CommonAdmin):
     def my_handler(self, request):
         return refresh_snapshots(request)
 
-    @admin.display(description='操作')
+    @admin.display(description="操作")
     def html_actions(self, obj):
         buttons = []
 
-        add_url = reverse('admin:redshift_restoretabletask_add')
+        add_url = reverse("admin:redshift_restoretabletask_add")
         botton1 = f'恢复 <a href="{add_url}?snapshot={obj.id}">【表】</a>'
 
-        add_url = reverse('admin:redshift_restoreclustertask_add')
+        add_url = reverse("admin:redshift_restoreclustertask_add")
         botton2 = f'<a href="{add_url}?snapshot={obj.id}">【集群】</a> 任务'
 
         buttons.append(botton1)
         buttons.append(botton2)
 
-        return mark_safe(' / '.join(buttons))
+        return mark_safe(" / ".join(buttons))
 
 
 @admin.register(Table)
 class TableAdmin(PermissionAdmin):
-    search_fields = ('name', )
-    list_filter = ('schema', )
+    search_fields = ("name",)
+    list_filter = ("schema",)
 
 
 @admin.register(RestoreTableTask)
 class RestorTableTaskAdmin(admin.ModelAdmin):
-    autocomplete_fields = ('snapshot', )
-    list_display = ('name', 'snapshot', 'status', )
+    autocomplete_fields = ("snapshot",)
+    list_display = (
+        "name",
+        "snapshot",
+        "status",
+    )
     # filter_horizontal = ('tables', )
-    exclude = ('status', )
+    exclude = ("status",)
 
 
 @admin.register(RestoreClusterTask)
 class RestoreClusterTaskAdmin(admin.ModelAdmin):
-    autocomplete_fields = ('snapshot', )
-    list_display = ('name', 'snapshot', 'status', )
-    exclude = ('status', )
+    autocomplete_fields = ("snapshot",)
+    list_display = (
+        "name",
+        "snapshot",
+        "status",
+    )
+    exclude = ("status",)
 
 
 @admin.register(QueryHistory)
 class QueryHistoryAdmin(admin.ModelAdmin):
-    search_fields = ('dashboard_code', )
-    ordering = ('-elapsed', )
-    list_display = ('dashboard_code', 'start_time', 'elapsed', 'query_id', 'query_uuid', )
-    list_display_links = None
-    list_filter = (
-        'dashboard_code',
+    search_fields = ("dashboard_code",)
+    ordering = ("-elapsed",)
+    list_display = (
+        "dashboard_code",
+        "start_time",
+        "elapsed",
+        "query_id",
+        "query_uuid",
     )
+    list_display_links = None
+    list_filter = ("dashboard_code",)

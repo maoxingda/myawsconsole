@@ -1,0 +1,27 @@
+[tool.ruff]
+line-length = 120
+indent-width = 4
+target-version = "py39"
+
+extend-exclude = [
+    "tests",
+    "migrations"
+]
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+    # flake8-quotes
+    "Q",
+]

@@ -5,28 +5,37 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dms', '0009_alter_replicationendpoint_endpoint_arn'),
+        ("dms", "0009_alter_replicationendpoint_endpoint_arn"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='replicationtask',
-            name='source_endpoint_arn',
+            model_name="replicationtask",
+            name="source_endpoint_arn",
         ),
         migrations.RemoveField(
-            model_name='replicationtask',
-            name='target_endpoint_arn',
+            model_name="replicationtask",
+            name="target_endpoint_arn",
         ),
         migrations.AddField(
-            model_name='replicationtask',
-            name='source_endpoint',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='source_replication_tasks', to='dms.replicationendpoint'),
+            model_name="replicationtask",
+            name="source_endpoint",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="source_replication_tasks",
+                to="dms.replicationendpoint",
+            ),
         ),
         migrations.AddField(
-            model_name='replicationtask',
-            name='target_endpoint',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='target_replication_tasks', to='dms.replicationendpoint'),
+            model_name="replicationtask",
+            name="target_endpoint",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="target_replication_tasks",
+                to="dms.replicationendpoint",
+            ),
         ),
     ]

@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('msk', '0002_alter_topic_options'),
+        ("msk", "0002_alter_topic_options"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='topic',
-            name='end_time',
-            field=models.DateTimeField(blank=True, null=True, verbose_name='结束时间'),
+            model_name="topic",
+            name="end_time",
+            field=models.DateTimeField(blank=True, null=True, verbose_name="结束时间"),
         ),
         migrations.AddField(
-            model_name='topic',
-            name='start_time',
-            field=models.DateTimeField(blank=True, null=True, verbose_name='开始时间'),
+            model_name="topic",
+            name="start_time",
+            field=models.DateTimeField(blank=True, null=True, verbose_name="开始时间"),
         ),
     ]

@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('schemagenerator', '0011_task_enable_vue'),
+        ("schemagenerator", "0011_task_enable_vue"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='task',
-            name='status',
-            field=models.CharField(default='CREATED', max_length=32, verbose_name='状态'),
+            model_name="task",
+            name="status",
+            field=models.CharField(
+                default="CREATED", max_length=32, verbose_name="状态"
+            ),
         ),
     ]

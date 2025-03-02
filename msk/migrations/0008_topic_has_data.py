@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('msk', '0007_topic_key'),
+        ("msk", "0007_topic_key"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='topic',
-            name='has_data',
-            field=models.BooleanField(default=False, verbose_name='是否有数据'),
+            model_name="topic",
+            name="has_data",
+            field=models.BooleanField(default=False, verbose_name="是否有数据"),
         ),
     ]

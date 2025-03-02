@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('redshift', '0001_initial'),
+        ("redshift", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='cluster',
-            name='identifier',
-            field=models.CharField(max_length=128, unique=True, verbose_name='集群'),
+            model_name="cluster",
+            name="identifier",
+            field=models.CharField(max_length=128, unique=True, verbose_name="集群"),
         ),
     ]

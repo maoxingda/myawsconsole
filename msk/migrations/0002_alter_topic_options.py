@@ -4,14 +4,17 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('msk', '0001_initial'),
+        ("msk", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='topic',
-            options={'ordering': ('name',), 'verbose_name': '主题', 'verbose_name_plural': '主题'},
+            name="topic",
+            options={
+                "ordering": ("name",),
+                "verbose_name": "主题",
+                "verbose_name_plural": "主题",
+            },
         ),
     ]
