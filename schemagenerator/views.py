@@ -149,7 +149,8 @@ def launch_task(request, task_id):
 
                     time.sleep(15)
 
-            if os.getlogin() == 'root':
+            import pwd
+            if pwd.getpwuid(os.getuid())[0] != 'ec2-user':
                 response = client.describe_endpoints(Filters=[{'Name': 'endpoint-id', 'Values': ['bi-sandbox-acceptanydate']}])
                 target_endpoint_arn = response['Endpoints'][0]['EndpointArn']
                 response = client.describe_replication_instances(Filters=[{'Name': 'replication-instance-id', 'Values': ['bi-sandbox-private-replication-instance']}])
@@ -157,7 +158,7 @@ def launch_task(request, task_id):
             else:
                 response = client.describe_endpoints(Filters=[{'Name': 'endpoint-id', 'Values': ['bi-prod-hc']}])
                 target_endpoint_arn = response['Endpoints'][0]['EndpointArn']
-                response = client.describe_replication_instances(Filters=[{'Name': 'replication-instance-id', 'Values': ['hc-replica-server-private-v2']}])
+                response = client.describe_replication_instances(Filters=[{'Name': 'replication-instance-id', 'Values': ['hc-replica-server-private-v3']}])
                 replication_instance_arn = response['ReplicationInstances'][0]['ReplicationInstanceArn']
 
             replication_task_id = f'{task.name.replace("_", "-")}-{settings.REPLICATION_TASK_SUFFIX}'
