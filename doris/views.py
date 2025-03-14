@@ -49,6 +49,8 @@ def start_s3_load_task(request, task_id):
                 create_table_ddl += f"    {column_name} datetime"
             elif data_type == "double precision":
                 create_table_ddl += f"    {column_name} double"
+            elif data_type == "numeric":
+                create_table_ddl += f"    {column_name} decimal"
             else:
                 create_table_ddl += f"    {column_name} {data_type}"
             if i + 1 < len(columns):
