@@ -83,15 +83,15 @@ def get_sql_hash(sql_text):
 
 
 def main(
-    full_table_name: str,
-    partition_column: str,
-    s3_key_prefix: str,
-    skip_unload: bool = True,
-    skip_load: bool = True,
-    unload_parrallelism: int = 1,
-    load_parrallelism: int = 16,
-    try_unload: bool = True,
-    try_load: bool = True,
+    full_table_name: str = typer.Option(..., "--full-table-name", help="Full name of the table"),
+    partition_column: str = typer.Option(None, "--partition-column", help="Partition column name"),
+    s3_key_prefix: str = typer.Option(..., "--s3-key-prefix", help="S3 key prefix for unload/load"),
+    skip_unload: bool = typer.Option(True, "--skip-unload/--no-skip-unload", help="Skip the unload step"),
+    skip_load: bool = typer.Option(True, "--skip-load/--no-skip-load", help="Skip the load step"),
+    unload_parallelism: int = typer.Option(1, "--unload-parallelism", help="Parallelism for unload operation"),
+    load_parallelism: int = typer.Option(16, "--load-parallelism", help="Parallelism for load operation"),
+    try_unload: bool = typer.Option(True, "--try-unload/--no-try-unload", help="Attempt unload operation"),
+    try_load: bool = typer.Option(True, "--try-load/--no-try-load", help="Attempt load operation"),
 ):
     schema_name, table_name = full_table_name.split(".")
     if s3_key_prefix.endswith("/"):
@@ -113,7 +113,7 @@ def main(
 
     # 按年分区卸载数据，能够保证32个并行度写的文件大小比较合适
     if not skip_unload:
-        if partition_column != "none":
+        if partition_column:
             unload_sqls = get_partition_unload_sqls(full_table_name, partition_column, s3_key_prefix)
         else:
             unload_sqls = get_unload_sqls(full_table_name, s3_key_prefix)
@@ -121,7 +121,7 @@ def main(
         if try_unload:
             unload_sqls = unload_sqls[:1]
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=unload_parrallelism) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=unload_parallelism) as executor:
             start = time.time()
             future_to_sql = {
                 executor.submit(execute_sql, sql, db.REDSHIFT, False, "ignore-db"): sql
@@ -147,7 +147,7 @@ def main(
         table_columns = get_table_columns(full_table_name)
         s3 = boto3.client("s3", region_name="cn-northwest-1")
         paginator = s3.get_paginator("list_objects_v2")
-        with concurrent.futures.ThreadPoolExecutor(max_workers=load_parrallelism) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=load_parallelism) as executor:
             load_sqls = []
             for page in paginator.paginate(
                 Bucket=f"{os.environ['S3_BUCKET_NAME']}", Prefix=f"{s3_key_prefix}/{schema_name}/{table_name}/"
