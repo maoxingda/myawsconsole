@@ -236,6 +236,7 @@ def get_partition_unload_sqls(full_table_name, partition_column, s3_key_prefix):
                 format as parquet
                 partition by (year)
                 parallel on
+                MAXFILESIZE 512MB
                 cleanpath
             """)  # noqa: SIM112, E501
         # typer.echo(sql)
