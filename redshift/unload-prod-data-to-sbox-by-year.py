@@ -86,12 +86,12 @@ def main(
     full_table_name: str = typer.Option(..., "--full-table-name", help="Full name of the table"),
     partition_column: str = typer.Option(None, "--partition-column", help="Partition column name"),
     s3_key_prefix: str = typer.Option(..., "--s3-key-prefix", help="S3 key prefix for unload/load"),
-    skip_unload: bool = typer.Option(True, "--skip-unload/--no-skip-unload", help="Skip the unload step"),
-    skip_load: bool = typer.Option(True, "--skip-load/--no-skip-load", help="Skip the load step"),
+    skip_unload: bool = typer.Option(False, "--skip-unload/--no-skip-unload", help="Skip the unload step"),
+    skip_load: bool = typer.Option(False, "--skip-load/--no-skip-load", help="Skip the load step"),
     unload_parallelism: int = typer.Option(1, "--unload-parallelism", help="Parallelism for unload operation"),
     load_parallelism: int = typer.Option(16, "--load-parallelism", help="Parallelism for load operation"),
-    try_unload: bool = typer.Option(True, "--try-unload/--no-try-unload", help="Attempt unload operation"),
-    try_load: bool = typer.Option(True, "--try-load/--no-try-load", help="Attempt load operation"),
+    try_unload: bool = typer.Option(False, "--try-unload/--no-try-unload", help="Attempt unload operation"),
+    try_load: bool = typer.Option(False, "--try-load/--no-try-load", help="Attempt load operation"),
 ):
     schema_name, table_name = full_table_name.split(".")
     if s3_key_prefix.endswith("/"):
