@@ -92,16 +92,20 @@ def main(
     load_parallelism: int = typer.Option(16, "--load-parallelism", help="Parallelism for load operation"),
     try_unload: bool = typer.Option(False, "--try-unload/--no-try-unload", help="Attempt unload operation"),
     try_load: bool = typer.Option(False, "--try-load/--no-try-load", help="Attempt load operation"),
+    clear_unload_ck: bool = typer.Option(
+        False, "--clear-unload-ck/--no-clear-unload-ck", help="Clear unload checkpoint"
+    ),
+    clear_load_ck: bool = typer.Option(False, "--clear-load-ck/--no-clear-load-ck", help="Clear load checkpoint"),
 ):
     schema_name, table_name = full_table_name.split(".")
     if s3_key_prefix.endswith("/"):
         s3_key_prefix = s3_key_prefix[:-1]
 
-    if not os.path.exists(f"{full_table_name}.unload.ck"):
+    if not os.path.exists(f"{full_table_name}.unload.ck") or clear_unload_ck:
         with open(f"{full_table_name}.unload.ck", "w") as f:
             f.write("")
 
-    if not os.path.exists(f"{full_table_name}.load.ck"):
+    if not os.path.exists(f"{full_table_name}.load.ck") or clear_load_ck:
         with open(f"{full_table_name}.load.ck", "w") as f:
             f.write("")
 
