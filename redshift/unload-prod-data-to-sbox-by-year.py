@@ -113,33 +113,10 @@ def main(
 
     # 按年分区卸载数据，能够保证32个并行度写的文件大小比较合适
     if not skip_unload:
-        min_partition_val = execute_sql(
-            f"select min({partition_column}) from {full_table_name}", tgt_db=db.REDSHIFT, ret_val=True
-        )[0][0]
-
-        min_partition_val = f"{min_partition_val.year}-01-01"
-        min_partition_val = datetime.strptime(min_partition_val, "%Y-%m-%d")
-        today = datetime.now(timezone.utc) + timedelta(hours=8)
-
-        unload_sqls = []
-        cur_partition_val = min_partition_val
-        while cur_partition_val.year <= today.year:
-            upper_bound = cur_partition_val.replace(year=cur_partition_val.year + 1)
-            sql = textwrap.dedent(f"""
-                unload (
-                    'select *, {cur_partition_val.year} as year from {full_table_name} where {partition_column} >= ''{cur_partition_val}'' and {partition_column} < ''{upper_bound}'''
-                )
-                to 's3://{os.environ["S3_BUCKET_NAME"]}/{s3_key_prefix}/{full_table_name.split(".")[0]}/{full_table_name.split(".")[1]}/'
-                iam_role '{os.getenv("iam_role")}'
-                format as parquet
-                partition by (year)
-                parallel on
-                cleanpath
-            """)  # noqa: SIM112, E501
-            # typer.echo(sql)
-            # typer.echo("-" * 128)
-            cur_partition_val = upper_bound
-            unload_sqls.append(sql)
+        if partition_column != "none":
+            unload_sqls = get_partition_unload_sqls(full_table_name, partition_column, s3_key_prefix)
+        else:
+            unload_sqls = get_unload_sqls(full_table_name, s3_key_prefix)
 
         if try_unload:
             unload_sqls = unload_sqls[:1]
@@ -221,6 +198,51 @@ def main(
             typer.echo(f"{full_table_name} load done, elapsed {elapsed} minutes.", err=True)
     else:
         typer.echo("skip load", err=True)
+
+
+def get_unload_sqls(full_table_name, s3_key_prefix):
+    sql = textwrap.dedent(f"""
+        unload (
+            'select * from {full_table_name}'
+        )
+        to 's3://{os.environ["S3_BUCKET_NAME"]}/{s3_key_prefix}/{full_table_name.split(".")[0]}/{full_table_name.split(".")[1]}/'
+        iam_role '{os.getenv("iam_role")}'
+        format as parquet
+        parallel off
+        MAXFILESIZE 512MB
+        cleanpath
+    """)  # noqa: SIM112, E501
+
+    return [sql]
+
+
+def get_partition_unload_sqls(full_table_name, partition_column, s3_key_prefix):
+    min_partition_val = execute_sql(
+        f"select min({partition_column}) from {full_table_name}", tgt_db=db.REDSHIFT, ret_val=True
+    )[0][0]
+    min_partition_val = f"{min_partition_val.year}-01-01"
+    min_partition_val = datetime.strptime(min_partition_val, "%Y-%m-%d")
+    today = datetime.now(timezone.utc) + timedelta(hours=8)
+    unload_sqls = []
+    cur_partition_val = min_partition_val
+    while cur_partition_val.year <= today.year:
+        upper_bound = cur_partition_val.replace(year=cur_partition_val.year + 1)
+        sql = textwrap.dedent(f"""
+                unload (
+                    'select *, {cur_partition_val.year} as year from {full_table_name} where {partition_column} >= ''{cur_partition_val}'' and {partition_column} < ''{upper_bound}'''
+                )
+                to 's3://{os.environ["S3_BUCKET_NAME"]}/{s3_key_prefix}/{full_table_name.split(".")[0]}/{full_table_name.split(".")[1]}/'
+                iam_role '{os.getenv("iam_role")}'
+                format as parquet
+                partition by (year)
+                parallel on
+                cleanpath
+            """)  # noqa: SIM112, E501
+        # typer.echo(sql)
+        # typer.echo("-" * 128)
+        cur_partition_val = upper_bound
+        unload_sqls.append(sql)
+    return unload_sqls
 
 
 if __name__ == "__main__":
